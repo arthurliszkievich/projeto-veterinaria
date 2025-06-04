@@ -49,6 +49,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Adicionado para servir arquivos estáticos em produção
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -92,6 +94,8 @@ DATABASES = {
         'PORT': os.getenv('SQL_PORT'),  # Será None se não definido
     }
 }
+
+
 # Garante que NAME seja um Path para SQLite se SQL_ENGINE for sqlite3 e NAME não for um path
 if DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3' and not isinstance(DATABASES['default']['NAME'], Path):
     DATABASES['default']['NAME'] = BASE_DIR / DATABASES['default']['NAME']
@@ -134,6 +138,12 @@ STATIC_URL = 'static/'
 
 # Diretório onde o `collectstatic` irá reunir todos os arquivos estáticos para produção.
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Diretórios adicionais onde o Django procurará por arquivos estáticos.
 STATICFILES_DIRS = [

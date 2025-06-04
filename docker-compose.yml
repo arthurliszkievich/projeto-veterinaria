@@ -1,6 +1,6 @@
 services: # Define os contêineres (serviços) da sua aplicação.
   db: # Nome do serviço do banco de dados.
-    image: postgres:13 # Usa a imagem oficial do PostgreSQL versão 13.
+    image: postgres:16 # Usa a imagem oficial do PostgreSQL versão 16.
     volumes:
       # Mapeia um volume nomeado 'postgres_data' para o diretório de dados do PostgreSQL dentro do container.
       # Isso garante que os dados do banco persistam mesmo se o container for parado/removido.
@@ -8,9 +8,9 @@ services: # Define os contêineres (serviços) da sua aplicação.
     environment:
       # Variáveis de ambiente para configurar o PostgreSQL na primeira inicialização.
       # Os valores virão do seu arquivo .env.
-      - POSTGRES_DB=${SQL_DATABASE}
-      - POSTGRES_USER=${SQL_USER}
-      - POSTGRES_PASSWORD=${SQL_PASSWORD}
+      - POSTGRES_DB=clinic_db
+      - POSTGRES_USER=clinic_user
+      - POSTGRES_PASSWORD=testpassword123
     ports:
       # Mapeia a porta 5432 do container para a porta 5432 do seu computador (host).
       # Útil para conectar ao banco de dados de fora do Docker (ex: com DBeaver, pgAdmin) durante o desenvolvimento.
@@ -18,7 +18,7 @@ services: # Define os contêineres (serviços) da sua aplicação.
       - "5432:5432" # Formato "HOST:CONTAINER"
     healthcheck: # Define como verificar a saúde deste serviço.
       # Comando para verificar se o PostgreSQL está pronto para aceitar conexões.
-      test: ["CMD-SHELL", "pg_isready -U ${SQL_USER} -d ${SQL_DATABASE} -h localhost || exit 1"]
+      test: ["CMD-SHELL", "pg_isready -U clinic_user -d clinic_db -h localhost || exit 1"]
       interval: 10s    # Intervalo entre as verificações.
       timeout: 5s      # Tempo máximo para a verificação responder.
       retries: 5       # Número de tentativas antes de marcar como "unhealthy".
@@ -30,7 +30,7 @@ services: # Define os contêineres (serviços) da sua aplicação.
       dockerfile: Dockerfile # Especifica qual Dockerfile usar (neste caso, o nome padrão).
     # O comando CMD do Dockerfile (Gunicorn) será usado para iniciar.
     volumes:
-      # - .:/home/django/web # (COMENTADO) Para desenvolvimento, isso monta seu código local no container,
+      - .:/home/django/web # Para desenvolvimento, isso monta seu código local no container,
       #                        permitindo live-reload. Para testar a imagem de produção, comente ou remova.
       # Mapeia volumes nomeados para os diretórios de arquivos estáticos e de mídia.
       # Esses volumes podem ser usados por um servidor web (como Nginx) em produção para servir esses arquivos.
