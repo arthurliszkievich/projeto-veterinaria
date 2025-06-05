@@ -72,7 +72,6 @@ class Paciente(models.Model):
         max_length=100, verbose_name='Nome do Paciente')
     tutor = models.ForeignKey(
         Tutor,
-        # Revertido para PROTECT como sugestão de segurança.
         on_delete=models.PROTECT,
         related_name='pacientes',
         verbose_name='Tutor Responsável',  # Corrigido 'Tutor' para 'Tutor Responsável'
@@ -90,7 +89,6 @@ class Paciente(models.Model):
         max_length=50, blank=True, null=True, unique=True,
         verbose_name='Microchip')
     cor_pelagem = models.CharField(
-        # Corrigido 'Cor da Pelagem'
         max_length=50, blank=True, null=True, verbose_name='Cor da Pelagem')
     peso_kg = models.DecimalField(
         max_digits=6, decimal_places=3, blank=True, null=True,
