@@ -59,7 +59,7 @@ class ConsultaViewSet(viewsets.ModelViewSet):
     Permite listar, criar, atualizar e excluir Consultas.
     """
     queryset = Consulta.objects.all().order_by(
-        '-data_criacao_registro')  # Você mudou a ordenação aqui, OK.
+        '-data_criacao_registro')
     serializer_class = ConsultaSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
