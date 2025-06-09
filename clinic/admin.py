@@ -1,6 +1,6 @@
 # clinic/admin.py
 from django.contrib import admin
-from .models import Tutor, Paciente
+from .models import Tutor, Paciente, Veterinario, Consulta
 
 
 @admin.register(Tutor)
@@ -54,4 +54,46 @@ class PacienteAdmin(admin.ModelAdmin):
 
     def get_idade(self, obj):  # Para exibir a property 'idade' corretamente se necessário
         return obj.idade
-    get_idade.short_description = 'Idade Atual'
+    get_idade.short_description = 'Idade Atual'  # type: ignore
+
+
+@admin.register(Veterinario)
+class VeterinarioAdmin(admin.ModelAdmin):
+    list_display = ('nome_completo', 'crmv',)
+    search_fields = ('nome_completo', 'crmv')
+
+
+@admin.register(Consulta)
+class ConsultaAdmin(admin.ModelAdmin):
+    list_display = ('paciente', 'data_hora_agendamento',
+                    'tipo_consulta', 'veterinario_responsavel', 'get_tutor_nome')
+    list_filter = ('tipo_consulta', 'data_hora_agendamento',
+                   'veterinario_responsavel', 'paciente__tutor')
+    search_fields = ('paciente__nome', 'paciente__tutor__nome_completo',
+                     'veterinario_responsavel__nome_completo', 'tipo_consulta')
+    autocomplete_fields = ['paciente', 'veterinario_responsavel']
+    date_hierarchy = 'data_hora_agendamento'  # Permite navegação por data
+
+    fieldsets = (
+        ("Informações Gerais", {
+            'fields': ('paciente', 'veterinario_responsavel', 'data_hora_agendamento', 'tipo_consulta')
+        }),
+        ("Anamnese e Exame Físico", {
+            'fields': ('queixa_principal_tutor', 'historico_doenca_atual', ('temperatura_celsius', 'frequencia_cardiaca_bpm', 'frequencia_respiratoria_mpm'),
+                       ('tpc_segundos', 'hidratacao_status', 'escore_condicao_corporal'), 'observacoes_exame_fisico')
+        }),
+        ("Diagnóstico e Tratamento", {
+            'fields': ('suspeitas_diagnosticas', 'exames_complementares_solicitados', 'diagnostico_definitivo',
+                       'tratamento_prescrito', 'procedimentos_realizados')
+        }),
+        ("Pós-Consulta", {
+            'fields': ('prognostico', 'instrucoes_para_tutor', 'data_proximo_retorno')
+        }),
+    )
+
+    def get_tutor_nome(self, obj):
+        return obj.paciente.tutor.nome_completo
+    # Nome da coluna no admin
+    get_tutor_nome.short_description = 'Tutor'  # type: ignore
+    # Permite ordenar por esta coluna
+    get_tutor_nome.admin_order_field = 'paciente__tutor__nome_completo'  # type: ignore

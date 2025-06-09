@@ -102,10 +102,9 @@ class Paciente(models.Model):
         upload_to='pacientes_fotos/', blank=True, null=True,
         verbose_name='Foto', help_text="Foto do paciente")
     observacoes_clinicas = models.TextField(
-        # Corrigido e removida vírgula extra
         blank=True, null=True, verbose_name='Observações Clínicas Relevantes')
     alergias_conhecidas = models.TextField(
-        blank=True, null=True, verbose_name='Alergias Conhecidas')  # Removida vírgula extra
+        blank=True, null=True, verbose_name='Alergias Conhecidas')
 
     class Meta:
         verbose_name = 'Paciente'
@@ -113,7 +112,9 @@ class Paciente(models.Model):
         ordering = ['nome']
 
     def __str__(self):
-        return f"{self.nome} (Espécie: {self.get_especie_display()}) - Tutor: {self.tutor.nome_completo}"
+    # fmt: off
+        return f"{self.nome} (Espécie: {self.get_especie_display()}) - Tutor: {self.tutor.nome_completo}" # type: ignore
+    # fmt: on  
 
     @property
     def idade(self):
@@ -139,3 +140,95 @@ class Paciente(models.Model):
                         return "Data futura"  # Para evitar idade negativa se data_nascimento for no futuro
                     return f"{dias} dia(s)"
         return "Não informada"
+
+
+class Veterinario(models.Model):
+    nome_completo = models.CharField(
+        max_length=255, verbose_name="Nome do Veterinário")
+    crmv = models.CharField(max_length=20, blank=True, null=True, unique=True,
+                            verbose_name="CRMV")
+
+    class Meta:
+        verbose_name = "Veterinário"
+        verbose_name_plural = "Veterinários"
+        ordering = ['nome_completo']
+
+    def __str__(self):
+        return self.nome_completo
+
+
+class Consulta(models.Model):
+    TIPO_CONSULTA_CHOICES = [
+        ('ROTINA', 'Rotina/Check-up'),
+        ('EMERGENCIA', 'Emergência'),
+        ('VACINACAO', 'Vacinação'),
+        ('CIRURGIA', 'Cirurgia'),
+        ('RETORNO', 'Retorno'),
+        ('OUTRO', 'Outro'),
+    ]
+    paciente = models.ForeignKey(
+        Paciente, on_delete=models.CASCADE, related_name='consultas', verbose_name='Paciente')
+
+    # SET_NULL = se o veterinário for removido, a consulta não será excluída, mas o campo ficará vazio
+    veterinario_responsavel = models.ForeignKey(Veterinario, on_delete=models.SET_NULL, null=True, blank=True,
+                                                related_name='consultas_realizadas', verbose_name='Veterinário Responsável')  # type: ignore
+
+    data_hora_agendamento = models.DateTimeField(
+        default=timezone.now, verbose_name='Data e Hora do Agendamento')
+    tipo_consulta = models.CharField(
+        max_length=20, choices=TIPO_CONSULTA_CHOICES, default='ROTINA', verbose_name='Tipo de Consulta')
+
+    # Anamnese e Exame Físico
+    queixa_principal_tutor = models.TextField(
+        blank=True, null=True, verbose_name='Queixa Principal do Tutor',)
+    historico_doenca_atual = models.TextField(
+        blank=True, null=True, verbose_name='Histórico da Doença Atual',)
+    temperatura_celsius = models.DecimalField(
+        max_digits=5, decimal_places=2, blank=True, null=True,
+        verbose_name='Temperatura (°C)')
+    frequencia_cardiaca_bpm = models.PositiveIntegerField(
+        blank=True, null=True, verbose_name='Frequência Cardíaca (bpm)')
+    frequencia_respiratoria_mpm = models.PositiveIntegerField(
+        blank=True, null=True, verbose_name='Frequência Respiratória (mpm)')
+    tpc_segundos = models.PositiveSmallIntegerField(
+        # Tempo de Preenchimento Capilar
+        blank=True, null=True, verbose_name='TPC (segundos)')
+    hidratacao_status = models.CharField(
+        max_length=50, blank=True, null=True,
+        verbose_name='Status de Hidratação',
+        help_text="Ex: Normal, Desidratado, Hiperdistendido")
+    escore_condicao_corporal = models.CharField(max_length=50, blank=True, null=True,
+                                                verbose_name='Escore de Condição Corporal',)
+    observacoes_exame_fisico = models.TextField(
+        blank=True, null=True, verbose_name='Observações do Exame Físico',)
+
+    # Diagnóstico e Tratamento
+    suspeitas_diagnosticas = models.TextField(
+        blank=True, null=True, verbose_name="Suspeita(s) Diagnóstica(s)")
+    exames_complementares_solicitados = models.TextField(
+        blank=True, null=True, verbose_name="Exames Complementares Solicitados")
+    diagnostico_definitivo = models.TextField(
+        blank=True, null=True, verbose_name="Diagnóstico Definitivo")
+    tratamento_prescrito = models.TextField(
+        blank=True, null=True, verbose_name="Tratamento Prescrito")
+    procedimentos_realizados = models.TextField(
+        blank=True, null=True, verbose_name="Procedimentos Realizados na Consulta")
+
+    # Pós-Consulta
+    prognostico = models.TextField(
+        blank=True, null=True, verbose_name="Prognóstico")
+    instrucoes_para_tutor = models.TextField(
+        blank=True, null=True, verbose_name="Instruções para o Tutor")
+    data_proximo_retorno = models.DateField(
+        blank=True, null=True, verbose_name="Data do Próximo Retorno")
+
+    data_criacao_registro = models.DateTimeField(auto_now_add=True)
+    data_ultima_modificacao = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Consulta'
+        verbose_name_plural = 'Consultas'
+        ordering = ['-data_hora_agendamento']  # mais recentes primeiro (-)
+
+    def __str__(self):
+        return f"Consulta de {self.paciente.nome} em {self.data_hora_agendamento.strftime('%d/%m/%Y %H:%M')}"

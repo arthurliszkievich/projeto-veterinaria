@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Tutor, Paciente
+from .models import Tutor, Paciente, Veterinario, Consulta
 
 
 class TutorSerializer(serializers.ModelSerializer):
@@ -16,7 +16,6 @@ class TutorSerializer(serializers.ModelSerializer):
 
 
 class PacienteSerializer(serializers.ModelSerializer):
-    # para exibir informações do tutor de uma forma mais amigável para api
     tutor_nome_completo = serializers.CharField(
         source='tutor.nome_completo', read_only=True)
     idade_atual = serializers.CharField(source='idade', read_only=True)
@@ -31,3 +30,18 @@ class PacienteSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'data_cadastro',
                             'tutor_nome_completo', 'idade_atual']
+
+
+class VeterinarioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Veterinario
+        fields = ['id', 'nome_completo', 'crmv']
+        read_only_fields = ['id']
+
+
+class ConsultaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Consulta
+        fields = '__all__'
+        read_only_fields = ['id', 'data_criacao_registro', 'data_ultima_modificacao',
+                            'paciente_nome', 'tutor_nome', 'veterinario_nome']
