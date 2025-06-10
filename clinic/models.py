@@ -157,6 +157,21 @@ class Veterinario(models.Model):
         return self.nome_completo
 
 
+class Sintoma(models.Model):
+    nome = models.CharField(max_length=200, unique=True,
+                            verbose_name='Nome do Sintoma')
+    descricao = models.TextField(blank=True, null=True,
+                                 verbose_name='Descrição do Sintoma (opcional)')
+
+    class Meta:
+        verbose_name = 'Sintoma'
+        verbose_name_plural = 'Sintomas'
+        ordering = ['nome']
+
+    def __str__(self):
+        return self.nome  # type: ignore
+
+
 class Consulta(models.Model):
     TIPO_CONSULTA_CHOICES = [
         ('ROTINA', 'Rotina/Check-up'),
@@ -224,6 +239,11 @@ class Consulta(models.Model):
 
     data_criacao_registro = models.DateTimeField(auto_now_add=True)
     data_ultima_modificacao = models.DateTimeField(auto_now=True)
+
+    # Uma consulta pode não ter sintomas registrados inicialmente, ou eles são adicionados depois
+    # consultas_com_sintoma é um relacionamento reverso para Sintoma
+    sintomas_apresentados = models.ManyToManyField(Sintoma, blank=True, verbose_name='Sintomas Apresentados',
+                                                   related_name='consultas_com_sintomas')
 
     class Meta:
         verbose_name = 'Consulta'

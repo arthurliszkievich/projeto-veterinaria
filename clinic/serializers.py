@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Tutor, Paciente, Veterinario, Consulta
+from .models import Tutor, Paciente, Veterinario, Consulta, Sintoma
 
 
 class TutorSerializer(serializers.ModelSerializer):
@@ -36,6 +36,13 @@ class VeterinarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Veterinario
         fields = ['id', 'nome_completo', 'crmv']
+        read_only_fields = ['id']
+
+
+class SintomaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Sintoma
+        fields = '__all__'
         read_only_fields = ['id']
 
 

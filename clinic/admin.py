@@ -1,6 +1,6 @@
 # clinic/admin.py
 from django.contrib import admin
-from .models import Tutor, Paciente, Veterinario, Consulta
+from .models import Tutor, Paciente, Veterinario, Consulta, Sintoma
 
 
 @admin.register(Tutor)
@@ -63,6 +63,12 @@ class VeterinarioAdmin(admin.ModelAdmin):
     search_fields = ('nome_completo', 'crmv')
 
 
+@admin.register(Sintoma)
+class SintomaAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'descricao')
+    search_fields = ('nome',)
+
+
 @admin.register(Consulta)
 class ConsultaAdmin(admin.ModelAdmin):
     list_display = ('paciente', 'data_hora_agendamento',
@@ -80,7 +86,7 @@ class ConsultaAdmin(admin.ModelAdmin):
         }),
         ("Anamnese e Exame Físico", {
             'fields': ('queixa_principal_tutor', 'historico_doenca_atual', ('temperatura_celsius', 'frequencia_cardiaca_bpm', 'frequencia_respiratoria_mpm'),
-                       ('tpc_segundos', 'hidratacao_status', 'escore_condicao_corporal'), 'observacoes_exame_fisico')
+                       ('tpc_segundos', 'hidratacao_status', 'escore_condicao_corporal'), 'observacoes_exame_fisico', 'sintomas_apresentados')
         }),
         ("Diagnóstico e Tratamento", {
             'fields': ('suspeitas_diagnosticas', 'exames_complementares_solicitados', 'diagnostico_definitivo',
@@ -89,7 +95,9 @@ class ConsultaAdmin(admin.ModelAdmin):
         ("Pós-Consulta", {
             'fields': ('prognostico', 'instrucoes_para_tutor', 'data_proximo_retorno')
         }),
+
     )
+    filter_horizontal = ('sintomas_apresentados',)
 
     def get_tutor_nome(self, obj):
         return obj.paciente.tutor.nome_completo

@@ -1,6 +1,6 @@
 from rest_framework import viewsets, permissions
-from .models import Tutor, Paciente, Veterinario, Consulta
-from .serializers import TutorSerializer, PacienteSerializer, VeterinarioSerializer, ConsultaSerializer
+from .models import Tutor, Paciente, Veterinario, Consulta, Sintoma
+from .serializers import TutorSerializer, PacienteSerializer, VeterinarioSerializer, ConsultaSerializer, SintomaSerializer
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend  # type: ignore
 
@@ -70,6 +70,26 @@ class VeterinarioViewSet(viewsets.ModelViewSet):
     search_fields = ['nome_completo', 'crmv']
     ordering_fields = ['nome_completo']
     ordering = ['nome_completo']
+
+
+class SintomaViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet para gerenciar os Sintomas.
+    Permite listar, criar, atualizar e excluir Sintomas.
+    """
+    queryset = Sintoma.objects.all()
+    serializer_class = SintomaSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = {
+        # Permite nome exato e "contém" (case-insensitive)
+        'nome': ['exact', 'icontains'],
+        'descricao': ['icontains']
+    }
+    search_fields = ['nome', 'descricao']
+    ordering_fields = ['nome', 'id']
+    ordering = ['nome']
 
 
 class ConsultaViewSet(viewsets.ModelViewSet):
