@@ -1,6 +1,10 @@
-from rest_framework import viewsets, permissions
+from django.db import IntegrityError
+from django.db.models.deletion import ProtectedError
+from rest_framework import status, viewsets, permissions
+from rest_framework.response import Response
 from .models import Tutor, Paciente, Veterinario, Consulta, Sintoma
-from .serializers import TutorSerializer, PacienteSerializer, VeterinarioSerializer, ConsultaSerializer, SintomaSerializer
+from .serializers import (TutorSerializer, PacienteSerializer,
+                          VeterinarioSerializer, ConsultaSerializer, SintomaSerializer,)
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend  # type: ignore
 
@@ -10,18 +14,37 @@ class TutorViewSet(viewsets.ModelViewSet):
     ViewSet para gerenciar os Tutores.
     Permite listar, criar, atualizar e excluir Tutores.
     """
+
     queryset = Tutor.objects.all()
     serializer_class = TutorSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
-    filter_backends = [DjangoFilterBackend, SearchFilter,
-                       OrderingFilter]  # Adiciona os novos backends
-    filterset_fields = ['cpf', 'email',
-                        'endereco_cidade', 'endereco_uf', 'nome_completo']
-    search_fields = ['nome_completo', 'cpf', 'email',
-                     'observacoes', 'endereco_rua', 'endereco_bairro']  # Campos para busca textual
-    ordering_fields = ['nome_completo', 'data_cadastro',
-                       'endereco_cidade']  # Campos pelos quais se pode ordenar
+    filter_backends = [
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]  # Adiciona os novos backends
+    filterset_fields = [
+        "cpf", "email", "endereco_cidade", "endereco_uf", "nome_completo",]
+    search_fields = ["nome_completo", "cpf", "email",
+                     "observacoes", "endereco_rua", "endereco_bairro",]
+    ordering_fields = ["nome_completo", "data_cadastro", "endereco_cidade",]
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError as e:
+            # Captura os pacientes que estão protegendo o tutor
+            pacientes_protegidos = list(e.protected_objects)
+            nomes_pacientes = [p.nome for p in pacientes_protegidos]
+
+            return Response(
+                {
+                    "detail": "Não é possível excluir o tutor porque existem pacientes associados.",
+                    "pacientes": nomes_pacientes
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class PacienteViewSet(viewsets.ModelViewSet):

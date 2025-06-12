@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Tutor, Paciente, Veterinario, Consulta, Sintoma
+from validate_docbr import CPF  # Importe a classe CPF para validação
 
 
 class TutorSerializer(serializers.ModelSerializer):
@@ -7,12 +8,25 @@ class TutorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Tutor
-        fields = ['id', 'nome_completo', 'cpf', 'telefone_principal',
-                  'telefone_secundario', 'email', 'endereco_rua', 'endereco_numero',
-                  'endereco_complemento', 'endereco_bairro', 'endereco_cidade',
-                  'endereco_uf', 'endereco_cep', 'data_cadastro', 'observacoes', 'pacientes'
-                  ]
-        read_only_fields = ['id', 'data_cadastro']
+        fields = [
+            "id", "nome_completo", "cpf", "telefone_principal", "telefone_secundario",
+            "email", "endereco_rua", "endereco_numero", "endereco_complemento", "endereco_bairro",
+            "endereco_cidade", "endereco_uf", "endereco_cep", "data_cadastro", "observacoes", "pacientes",
+        ]
+        read_only_fields = ["id", "data_cadastro"]
+
+    def validate_cpf(self, value):
+        """Valida se o CPF é válido usando a biblioteca validate_docbr"""
+        cpf = CPF()
+
+        # Remove formatação para validar apenas os números
+        cpf_value = value.replace('.', '').replace('-', '')
+
+        if not cpf.validate(cpf_value):
+            raise serializers.ValidationError("CPF inválido")
+
+        # Formata o CPF para o padrão XXX.XXX.XXX-XX antes de retornar
+        return cpf.mask(cpf_value)
 
 
 class PacienteSerializer(serializers.ModelSerializer):

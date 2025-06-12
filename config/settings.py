@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     # Apps de Terceiros
     "rest_framework",
     "dotenv",
-    'django_filters',  # Para filtros
+    "django_filters",  # Para filtros
 ]
 
 MIDDLEWARE = [
@@ -167,13 +167,13 @@ MEDIA_ROOT = BASE_DIR / "mediafiles"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 REST_FRAMEWORK = {
-    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
-    'DEFAULT_PERMISSION_CLASSES': [  # Definindo permissões padrão
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
+    "DEFAULT_PERMISSION_CLASSES": [  # Definindo permissões padrão
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ],
     # Exemplo de paginação padrão
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10  # Tamanho da página para paginação
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 10,  # Tamanho da página para paginação
 }
 
 

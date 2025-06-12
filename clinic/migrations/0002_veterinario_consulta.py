@@ -8,55 +8,226 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('clinic', '0001_initial'),
+        ("clinic", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Veterinario',
+            name="Veterinario",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nome_completo', models.CharField(max_length=255, verbose_name='Nome do Veterinário')),
-                ('crmv', models.CharField(blank=True, max_length=20, null=True, unique=True, verbose_name='CRMV')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "nome_completo",
+                    models.CharField(
+                        max_length=255, verbose_name="Nome do Veterinário"
+                    ),
+                ),
+                (
+                    "crmv",
+                    models.CharField(
+                        blank=True,
+                        max_length=20,
+                        null=True,
+                        unique=True,
+                        verbose_name="CRMV",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Veterinário',
-                'verbose_name_plural': 'Veterinários',
-                'ordering': ['nome_completo'],
+                "verbose_name": "Veterinário",
+                "verbose_name_plural": "Veterinários",
+                "ordering": ["nome_completo"],
             },
         ),
         migrations.CreateModel(
-            name='Consulta',
+            name="Consulta",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('data_hora_agendamento', models.DateTimeField(default=django.utils.timezone.now, verbose_name='Data e Hora do Agendamento')),
-                ('tipo_consulta', models.CharField(choices=[('ROTINA', 'Rotina/Check-up'), ('EMERGENCIA', 'Emergência'), ('VACINACAO', 'Vacinação'), ('CIRURGIA', 'Cirurgia'), ('RETORNO', 'Retorno'), ('OUTRO', 'Outro')], default='ROTINA', max_length=20, verbose_name='Tipo de Consulta')),
-                ('queixa_principal_tutor', models.TextField(blank=True, null=True, verbose_name='Queixa Principal do Tutor')),
-                ('historico_doenca_atual', models.TextField(blank=True, null=True, verbose_name='Histórico da Doença Atual')),
-                ('temperatura_celsius', models.DecimalField(blank=True, decimal_places=2, max_digits=5, null=True, verbose_name='Temperatura (°C)')),
-                ('frequencia_cardiaca_bpm', models.PositiveIntegerField(blank=True, null=True, verbose_name='Frequência Cardíaca (bpm)')),
-                ('frequencia_respiratoria_mpm', models.PositiveIntegerField(blank=True, null=True, verbose_name='Frequência Respiratória (mpm)')),
-                ('tpc_segundos', models.PositiveSmallIntegerField(blank=True, null=True, verbose_name='TPC (segundos)')),
-                ('hidratacao_status', models.CharField(blank=True, help_text='Ex: Normal, Desidratado, Hiperdistendido', max_length=50, null=True, verbose_name='Status de Hidratação')),
-                ('escore_condicao_corporal', models.CharField(blank=True, max_length=50, null=True, verbose_name='Escore de Condição Corporal')),
-                ('observacoes_exame_fisico', models.TextField(blank=True, null=True, verbose_name='Observações do Exame Físico')),
-                ('suspeitas_diagnosticas', models.TextField(blank=True, null=True, verbose_name='Suspeita(s) Diagnóstica(s)')),
-                ('exames_complementares_solicitados', models.TextField(blank=True, null=True, verbose_name='Exames Complementares Solicitados')),
-                ('diagnostico_definitivo', models.TextField(blank=True, null=True, verbose_name='Diagnóstico Definitivo')),
-                ('tratamento_prescrito', models.TextField(blank=True, null=True, verbose_name='Tratamento Prescrito')),
-                ('procedimentos_realizados', models.TextField(blank=True, null=True, verbose_name='Procedimentos Realizados na Consulta')),
-                ('prognostico', models.TextField(blank=True, null=True, verbose_name='Prognóstico')),
-                ('instrucoes_para_tutor', models.TextField(blank=True, null=True, verbose_name='Instruções para o Tutor')),
-                ('data_proximo_retorno', models.DateField(blank=True, null=True, verbose_name='Data do Próximo Retorno')),
-                ('data_criacao_registro', models.DateTimeField(auto_now_add=True)),
-                ('data_ultima_modificacao', models.DateTimeField(auto_now=True)),
-                ('paciente', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='consultas', to='clinic.paciente', verbose_name='Paciente')),
-                ('veterinario_responsavel', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='consultas_realizadas', to='clinic.veterinario', verbose_name='Veterinário Responsável')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "data_hora_agendamento",
+                    models.DateTimeField(
+                        default=django.utils.timezone.now,
+                        verbose_name="Data e Hora do Agendamento",
+                    ),
+                ),
+                (
+                    "tipo_consulta",
+                    models.CharField(
+                        choices=[
+                            ("ROTINA", "Rotina/Check-up"),
+                            ("EMERGENCIA", "Emergência"),
+                            ("VACINACAO", "Vacinação"),
+                            ("CIRURGIA", "Cirurgia"),
+                            ("RETORNO", "Retorno"),
+                            ("OUTRO", "Outro"),
+                        ],
+                        default="ROTINA",
+                        max_length=20,
+                        verbose_name="Tipo de Consulta",
+                    ),
+                ),
+                (
+                    "queixa_principal_tutor",
+                    models.TextField(
+                        blank=True, null=True, verbose_name="Queixa Principal do Tutor"
+                    ),
+                ),
+                (
+                    "historico_doenca_atual",
+                    models.TextField(
+                        blank=True, null=True, verbose_name="Histórico da Doença Atual"
+                    ),
+                ),
+                (
+                    "temperatura_celsius",
+                    models.DecimalField(
+                        blank=True,
+                        decimal_places=2,
+                        max_digits=5,
+                        null=True,
+                        verbose_name="Temperatura (°C)",
+                    ),
+                ),
+                (
+                    "frequencia_cardiaca_bpm",
+                    models.PositiveIntegerField(
+                        blank=True, null=True, verbose_name="Frequência Cardíaca (bpm)"
+                    ),
+                ),
+                (
+                    "frequencia_respiratoria_mpm",
+                    models.PositiveIntegerField(
+                        blank=True,
+                        null=True,
+                        verbose_name="Frequência Respiratória (mpm)",
+                    ),
+                ),
+                (
+                    "tpc_segundos",
+                    models.PositiveSmallIntegerField(
+                        blank=True, null=True, verbose_name="TPC (segundos)"
+                    ),
+                ),
+                (
+                    "hidratacao_status",
+                    models.CharField(
+                        blank=True,
+                        help_text="Ex: Normal, Desidratado, Hiperdistendido",
+                        max_length=50,
+                        null=True,
+                        verbose_name="Status de Hidratação",
+                    ),
+                ),
+                (
+                    "escore_condicao_corporal",
+                    models.CharField(
+                        blank=True,
+                        max_length=50,
+                        null=True,
+                        verbose_name="Escore de Condição Corporal",
+                    ),
+                ),
+                (
+                    "observacoes_exame_fisico",
+                    models.TextField(
+                        blank=True,
+                        null=True,
+                        verbose_name="Observações do Exame Físico",
+                    ),
+                ),
+                (
+                    "suspeitas_diagnosticas",
+                    models.TextField(
+                        blank=True, null=True, verbose_name="Suspeita(s) Diagnóstica(s)"
+                    ),
+                ),
+                (
+                    "exames_complementares_solicitados",
+                    models.TextField(
+                        blank=True,
+                        null=True,
+                        verbose_name="Exames Complementares Solicitados",
+                    ),
+                ),
+                (
+                    "diagnostico_definitivo",
+                    models.TextField(
+                        blank=True, null=True, verbose_name="Diagnóstico Definitivo"
+                    ),
+                ),
+                (
+                    "tratamento_prescrito",
+                    models.TextField(
+                        blank=True, null=True, verbose_name="Tratamento Prescrito"
+                    ),
+                ),
+                (
+                    "procedimentos_realizados",
+                    models.TextField(
+                        blank=True,
+                        null=True,
+                        verbose_name="Procedimentos Realizados na Consulta",
+                    ),
+                ),
+                (
+                    "prognostico",
+                    models.TextField(blank=True, null=True, verbose_name="Prognóstico"),
+                ),
+                (
+                    "instrucoes_para_tutor",
+                    models.TextField(
+                        blank=True, null=True, verbose_name="Instruções para o Tutor"
+                    ),
+                ),
+                (
+                    "data_proximo_retorno",
+                    models.DateField(
+                        blank=True, null=True, verbose_name="Data do Próximo Retorno"
+                    ),
+                ),
+                ("data_criacao_registro", models.DateTimeField(auto_now_add=True)),
+                ("data_ultima_modificacao", models.DateTimeField(auto_now=True)),
+                (
+                    "paciente",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="consultas",
+                        to="clinic.paciente",
+                        verbose_name="Paciente",
+                    ),
+                ),
+                (
+                    "veterinario_responsavel",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="consultas_realizadas",
+                        to="clinic.veterinario",
+                        verbose_name="Veterinário Responsável",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Consulta',
-                'verbose_name_plural': 'Consultas',
-                'ordering': ['-data_hora_agendamento'],
+                "verbose_name": "Consulta",
+                "verbose_name_plural": "Consultas",
+                "ordering": ["-data_hora_agendamento"],
             },
         ),
     ]

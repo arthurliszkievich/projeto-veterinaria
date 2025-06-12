@@ -6,26 +6,51 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('clinic', '0002_veterinario_consulta'),
+        ("clinic", "0002_veterinario_consulta"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Sintoma',
+            name="Sintoma",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nome', models.CharField(max_length=200, unique=True, verbose_name='Nome do Sintoma')),
-                ('descricao', models.TextField(blank=True, null=True, verbose_name='Descrição do Sintoma (opcional)')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "nome",
+                    models.CharField(
+                        max_length=200, unique=True, verbose_name="Nome do Sintoma"
+                    ),
+                ),
+                (
+                    "descricao",
+                    models.TextField(
+                        blank=True,
+                        null=True,
+                        verbose_name="Descrição do Sintoma (opcional)",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Sintoma',
-                'verbose_name_plural': 'Sintomas',
-                'ordering': ['nome'],
+                "verbose_name": "Sintoma",
+                "verbose_name_plural": "Sintomas",
+                "ordering": ["nome"],
             },
         ),
         migrations.AddField(
-            model_name='consulta',
-            name='sintomas_apresentados',
-            field=models.ManyToManyField(blank=True, related_name='consultas_com_sintomas', to='clinic.sintoma', verbose_name='Sintomas Apresentados'),
+            model_name="consulta",
+            name="sintomas_apresentados",
+            field=models.ManyToManyField(
+                blank=True,
+                related_name="consultas_com_sintomas",
+                to="clinic.sintoma",
+                verbose_name="Sintomas Apresentados",
+            ),
         ),
     ]
