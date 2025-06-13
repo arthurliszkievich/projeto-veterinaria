@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Tutor, Paciente, Veterinario, Consulta, Sintoma
-from validate_docbr import CPF  # Importe a classe CPF para validação
+from validate_docbr import CPF
 
 
 class TutorSerializer(serializers.ModelSerializer):

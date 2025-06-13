@@ -5,25 +5,29 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth.models import User
 import datetime
-import decimal  # Para comparar Decimals
 
 from .models import Tutor, Paciente, Veterinario, Sintoma, Consulta
 from .factories import (
     TutorFactory, PacienteFactory, VeterinarioFactory, SintomaFactory, ConsultaFactory
 )
-from .serializers import (  # Importar todos os serializers que você pode querer usar para comparações
-    TutorSerializer, PacienteSerializer, VeterinarioSerializer, SintomaSerializer, ConsultaSerializer
+from .serializers import (
+    TutorSerializer
 )
 
 # --- Classe Base para Testes de API Autenticados ---
 
 
 class AuthenticatedAPITestCase(APITestCase):
+    """Classe base para testes que requerem autenticação"""
+
     def setUp(self):
         super().setUp()
+        # Cria usuário de teste e autentica
         self.user = User.objects.create_user(
-            username='testveterinario', email='testvet@example.com', password='testpassword123')
-        # Autentica o cliente de teste
+            username='testveterinario',
+            email='testvet@example.com',
+            password='testpassword123'
+        )
         self.client.force_authenticate(user=self.user)
 
 
@@ -31,32 +35,46 @@ class AuthenticatedAPITestCase(APITestCase):
 class TutorAPITests(AuthenticatedAPITestCase):
     def setUp(self):
         super().setUp()
+        # URL para listagem e criação
         self.list_create_url = reverse('tutor-list')
+        # Cria dois tutores de exemplo com dados controlados
         self.tutor1 = TutorFactory(
-            # CPF de exemplo
-            nome_completo="Ana Carolina", email="ana.carolina@example.com", cpf="111.111.111-11")
-        self.tutor2 = TutorFactory(nome_completo="Carlos Alberto",
-                                   email="carlos.alberto@example.com", cpf="222.222.222-22")
+            nome_completo="Ana Carolina",
+            email="ana.carolina@example.com",
+            cpf="111.111.111-11"
+        )
+        self.tutor2 = TutorFactory(
+            nome_completo="Carlos Alberto",
+            email="carlos.alberto@example.com",
+            cpf="222.222.222-22"
+        )
         self.detail_url_tutor1 = reverse(
             'tutor-detail', kwargs={'pk': self.tutor1.pk})
 
     def test_listar_tutores(self):
+        """Testa a listagem de todos os tutores"""
         response = self.client.get(self.list_create_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Verifica quantidade de resultados
         self.assertEqual(response.data['count'], 2)
 
     def test_criar_tutor_valido(self):
-        from validate_docbr import CPF  # Para gerar CPF válido para o teste
+        """Testa a criação de um tutor com dados válidos"""
+        from validate_docbr import CPF
         cpf_gen = CPF()
-        valid_cpf_for_test = cpf_gen.generate(True)
+        valid_cpf_for_test = cpf_gen.generate(True)  # Gera CPF válido
 
         data = {
             "nome_completo": "Fernanda Lima",
             "cpf": valid_cpf_for_test,
             "email": "fernanda.lima@example.com",
             "telefone_principal": "21987654321",
-            "endereco_rua": "Rua das Palmeiras", "endereco_numero": "123",
-            "endereco_bairro": "Botafogo", "endereco_cidade": "Rio de Janeiro", "endereco_uf": "RJ", "endereco_cep": "22270-000"
+            "endereco_rua": "Rua das Palmeiras",
+            "endereco_numero": "123",
+            "endereco_bairro": "Botafogo",
+            "endereco_cidade": "Rio de Janeiro",
+            "endereco_uf": "RJ",
+            "endereco_cep": "22270-000"
         }
         response = self.client.post(self.list_create_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -64,40 +82,53 @@ class TutorAPITests(AuthenticatedAPITestCase):
             email="fernanda.lima@example.com").exists())
 
     def test_criar_tutor_cpf_invalido_pela_validacao_do_serializer(self):
-        # Este teste depende de você ter uma validação de CPF no TutorSerializer
-        data = {"nome_completo": "Teste CPF Inválido",
-                "cpf": "000.000.000-00", "email": "cpf.invalido@example.com"}
+        """Testa validação de CPF inválido durante criação de tutor"""
+        data = {
+            "nome_completo": "Teste CPF Inválido",
+            "cpf": "000.000.000-00",  # CPF inválido
+            "email": "cpf.invalido@example.com"
+        }
         response = self.client.post(self.list_create_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('cpf', response.data)  # Espera erro no campo CPF
-
-    def test_criar_tutor_cpf_duplicado(self):
-        data = {"nome_completo": "Outra Ana",
-                "cpf": self.tutor1.cpf, "email": "outra.ana@example.com"}
-        response = self.client.post(self.list_create_url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # Verifica mensagem de erro no campo
         self.assertIn('cpf', response.data)
 
+    def test_criar_tutor_cpf_duplicado(self):
+        """Testa tentativa de criar tutor com CPF já existente"""
+        data = {
+            "nome_completo": "Outra Ana",
+            "cpf": self.tutor1.cpf,  # CPF duplicado
+            "email": "outra.ana@example.com"
+        }
+        response = self.client.post(self.list_create_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('cpf', response.data)  # Verifica mensagem de erro
+
     def test_recuperar_detalhe_tutor(self):
+        """Testa a recuperação de detalhes de um tutor específico"""
         response = self.client.get(self.detail_url_tutor1)
         serializer_esperado = TutorSerializer(self.tutor1)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # Compare campos chave
+        # Compara dados importantes
         self.assertEqual(
             response.data['nome_completo'], serializer_esperado.data['nome_completo'])
 
     def test_atualizar_tutor_patch(self):
-        data_parcial = {"telefone_principal": "11912345678",
-                        "observacoes": "Cliente VIP"}
+        """Testa atualização parcial de um tutor"""
+        data_parcial = {
+            "telefone_principal": "11912345678",
+            "observacoes": "Cliente VIP"
+        }
         response = self.client.patch(
             self.detail_url_tutor1, data_parcial, format='json')
-        self.tutor1.refresh_from_db()
+        self.tutor1.refresh_from_db()  # Atualiza objeto do banco
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(self.tutor1.telefone_principal, "11912345678")
         self.assertEqual(self.tutor1.observacoes, "Cliente VIP")
 
     def test_deletar_tutor_sem_pacientes_associados(self):
-        tutor_para_deletar = TutorFactory()  # Cria um tutor sem pacientes
+        """Testa exclusão de tutor sem pacientes associados"""
+        tutor_para_deletar = TutorFactory()  # Cria tutor sem pacientes
         url_delecao = reverse(
             'tutor-detail', kwargs={'pk': tutor_para_deletar.pk})
         response = self.client.delete(url_delecao)
@@ -106,41 +137,52 @@ class TutorAPITests(AuthenticatedAPITestCase):
             pk=tutor_para_deletar.pk).exists())
 
     def test_deletar_tutor_com_pacientes_protegidos_retorna_erro(self):
-        # PacienteFactory cria um paciente associado ao self.tutor1 por padrão (via SubFactory)
-        PacienteFactory(tutor=self.tutor1)
+        """Testa proteção contra exclusão de tutor com pacientes associados"""
+        PacienteFactory(tutor=self.tutor1)  # Associa paciente ao tutor
         response = self.client.delete(self.detail_url_tutor1)
-        # Esperamos um erro porque Paciente.tutor tem on_delete=models.PROTECT
-        # O DRF geralmente retorna 409 Conflict ou 400 Bad Request para ProtectedError.
-        # Vamos verificar se o tutor ainda existe.
+        # Verifica se retorna erro (400 ou 409)
         self.assertIn(response.status_code, [
                       status.HTTP_400_BAD_REQUEST, status.HTTP_409_CONFLICT])
         self.assertTrue(Tutor.objects.filter(pk=self.tutor1.pk).exists())
 
 
 # --- Testes para a API de Paciente ---
-# (Esqueleto similar ao TutorAPITests, você precisará preencher com testes específicos)
 class PacienteAPITests(AuthenticatedAPITestCase):
     def setUp(self):
         super().setUp()
+        # URL para listagem e criação
         self.list_create_url = reverse('paciente-list')
-        self.tutor_base = TutorFactory()
+        self.tutor_base = TutorFactory()  # Tutor base para pacientes
+        # Cria dois pacientes de exemplo
         self.paciente1 = PacienteFactory(
-            nome="Rex", tutor=self.tutor_base, especie="CANINO", raca="Labrador")
+            nome="Rex",
+            tutor=self.tutor_base,
+            especie="CANINO",
+            raca="Labrador"
+        )
         self.paciente2 = PacienteFactory(
-            nome="Mimi", tutor=self.tutor_base, especie="FELINO", raca="Siamês")
+            nome="Mimi",
+            tutor=self.tutor_base,
+            especie="FELINO",
+            raca="Siamês"
+        )
         self.detail_url_paciente1 = reverse(
             'paciente-detail', kwargs={'pk': self.paciente1.pk})
 
     def test_listar_pacientes(self):
+        """Testa listagem de todos os pacientes"""
         response = self.client.get(self.list_create_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 2)
+        self.assertEqual(response.data['count'], 2)  # Verifica quantidade
 
     def test_criar_paciente_valido(self):
+        """Testa criação de paciente com dados válidos"""
         data = {
-            "nome": "Bolinha", "tutor": self.tutor_base.pk, "especie": "CANINO",
-            "raca": "Poodle", "sexo": "MC",
-            # 2 anos atrás
+            "nome": "Bolinha",
+            "tutor": self.tutor_base.pk,
+            "especie": "CANINO",
+            "raca": "Poodle",
+            "sexo": "MC",
             "data_nascimento": (timezone.now() - timezone.timedelta(days=365*2)).strftime('%Y-%m-%d'),
             "peso_kg": "12.500"
         }
@@ -149,26 +191,37 @@ class PacienteAPITests(AuthenticatedAPITestCase):
         self.assertTrue(Paciente.objects.filter(nome="Bolinha").exists())
 
     def test_criar_paciente_sem_tutor_retorna_erro(self):
+        """Testa tentativa de criar paciente sem tutor associado"""
         data = {"nome": "Fantasma", "especie": "OUTRO"}
         response = self.client.post(self.list_create_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('tutor', response.data)
+        self.assertIn('tutor', response.data)  # Verifica mensagem de erro
 
     def test_filtrar_pacientes_por_especie_e_raca(self):
+        """Testa filtros combinados por espécie e raça"""
+        # Cria mais um paciente canino
         PacienteFactory(tutor=self.tutor_base,
                         especie="CANINO", raca="Golden Retriever")
+
+        # Filtra por espécie canino e raça contendo 'Labrador'
         response = self.client.get(self.list_create_url, {
-                                   'especie': 'CANINO', 'raca__icontains': 'Labrador'})
+            'especie': 'CANINO',
+            'raca__icontains': 'Labrador'
+        })
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 1)
-        self.assertEqual(response.data['results'][0]['nome'], "Rex")
+        self.assertEqual(response.data['count'], 1)  # Deve encontrar apenas 1
+        self.assertEqual(response.data['results']
+                         [0]['nome'], "Rex")  # Verifica nome
 
 
 # --- Testes para a API de Veterinario ---
 class VeterinarioAPITests(AuthenticatedAPITestCase):
     def setUp(self):
         super().setUp()
+        # URL para listagem e criação
         self.list_create_url = reverse('veterinario-list')
+        # Cria dois veterinários de exemplo
         self.vet1 = VeterinarioFactory(
             nome_completo="Dr. Dolittle", crmv="CRMV-SP-00001")
         self.vet2 = VeterinarioFactory(
@@ -177,23 +230,30 @@ class VeterinarioAPITests(AuthenticatedAPITestCase):
             'veterinario-detail', kwargs={'pk': self.vet1.pk})
 
     def test_listar_veterinarios(self):
+        """Testa listagem de todos os veterinários"""
         response = self.client.get(self.list_create_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 2)
+        self.assertEqual(response.data['count'], 2)  # Verifica quantidade
 
     def test_criar_veterinario(self):
-        data = {"nome_completo": "Dra. Lisa", "crmv": "CRMV-MG-12345"}
+        """Testa criação de veterinário com dados válidos"""
+        data = {
+            "nome_completo": "Dra. Lisa",
+            "crmv": "CRMV-MG-12345"  # CRMV único
+        }
         response = self.client.post(self.list_create_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Veterinario.objects.filter(
             crmv="CRMV-MG-12345").exists())
 
 
-# --- Testes para a API de Sintoma (como já tínhamos, com pequenas melhorias) ---
+# --- Testes para a API de Sintoma ---
 class SintomaAPITests(AuthenticatedAPITestCase):
     def setUp(self):
         super().setUp()
+        # URL para listagem e criação
         self.list_create_url = reverse('sintoma-list')
+        # Cria sintomas de exemplo
         self.sintoma_febre = SintomaFactory(
             nome="Febre", descricao="Temperatura corporal elevada.")
         self.sintoma_tosse = SintomaFactory(
@@ -203,61 +263,73 @@ class SintomaAPITests(AuthenticatedAPITestCase):
         self.detail_url_febre = reverse(
             'sintoma-detail', kwargs={'pk': self.sintoma_febre.pk})
 
-    # (Mantenha os testes de Sintoma que você já tinha e adicione mais se necessário)
     def test_listar_sintomas(self):
+        """Testa listagem de todos os sintomas"""
         response = self.client.get(self.list_create_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 3)
+        self.assertEqual(response.data['count'], 3)  # Verifica quantidade
 
     def test_criar_sintoma_valido(self):
-        data = {'nome': 'Vômito Agudo',
-                'descricao': 'Expulsão do conteúdo estomacal de forma súbita.'}
+        """Testa criação de sintoma com dados válidos"""
+        data = {
+            'nome': 'Vômito Agudo',
+            'descricao': 'Expulsão do conteúdo estomacal de forma súbita.'
+        }
         response = self.client.post(self.list_create_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Sintoma.objects.filter(nome='Vômito Agudo').exists())
 
     def test_filtrar_sintomas_por_nome_exato(self):
+        """Testa filtro de sintomas por nome exato"""
         response = self.client.get(self.list_create_url, {'nome': 'Febre'})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 1)
-        self.assertEqual(response.data['results']
-                         [0]['id'], self.sintoma_febre.id)
+        self.assertEqual(response.data['count'], 1)  # Deve encontrar apenas 1
+        self.assertEqual(response.data['results'][0]
+                         ['id'], self.sintoma_febre.id)  # Verifica ID
 
 
-# --- Testes para a API de Consulta (como já tínhamos, com pequenas melhorias) ---
+# --- Testes para a API de Consulta ---
 class ConsultaAPITests(AuthenticatedAPITestCase):
     def setUp(self):
         super().setUp()
+        # Cria dados relacionados necessários
         self.tutor1 = TutorFactory(nome_completo="Carlos Silva")
         self.paciente_rex = PacienteFactory(
             tutor=self.tutor1, nome="Rex", especie="CANINO")
         self.vet1 = VeterinarioFactory(nome_completo="Dr. House")
-        self.sintoma_febre_consulta = SintomaFactory(
-            nome="Febre Consulta")  # Nome único para este teste
+        # Cria sintomas específicos para os testes
+        self.sintoma_febre_consulta = SintomaFactory(nome="Febre Consulta")
         self.sintoma_tosse_consulta = SintomaFactory(nome="Tosse Consulta")
 
+        # URL para listagem e criação
         self.list_create_url = reverse('consulta-list')
 
+        # Cria consulta de exemplo
         self.consulta_rex = ConsultaFactory(
             paciente=self.paciente_rex,
             veterinario_responsavel=self.vet1,
             tipo_consulta='ROTINA',
             data_hora_agendamento=timezone.make_aware(
                 datetime.datetime(2023, 1, 10, 10, 0, 0)),
-            sintomas_apresentados=[self.sintoma_febre_consulta]
+            sintomas_apresentados=[
+                self.sintoma_febre_consulta]  # Associa sintoma
         )
         self.detail_url_consulta_rex = reverse(
             'consulta-detail', kwargs={'pk': self.consulta_rex.pk})
 
     def test_listar_consultas(self):
-        ConsultaFactory()  # Cria mais uma
+        """Testa listagem de todas as consultas"""
+        ConsultaFactory()  # Cria mais uma consulta
         response = self.client.get(self.list_create_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Deve encontrar 2 consultas
         self.assertEqual(response.data['count'], 2)
 
     def test_criar_consulta_com_todos_os_campos_texto_anamnese_exame(self):
-        """ Testa a criação de uma consulta preenchendo todos os campos de texto opcionais."""
-        paciente_novo = PacienteFactory()
+        """Testa criação de consulta com todos os campos preenchidos"""
+        paciente_novo = PacienteFactory()  # Novo paciente para teste
+
+        # Dados completos para uma consulta
         data = {
             "paciente": paciente_novo.pk,
             "veterinario_responsavel": self.vet1.pk,
@@ -268,7 +340,7 @@ class ConsultaAPITests(AuthenticatedAPITestCase):
             "anamnese_sistema_respiratorio": "Respiração normal.",
             "anamnese_sistema_cardiovascular": "Sem histórico de problemas cardíacos.",
             "anamnese_sistema_digestorio": "Recusa alimentar, bebeu pouca água.",
-            # ... adicione valores para TODOS os outros campos de anamnese e exame físico ...
+            # ... outros campos de anamnese ...
             "examefisico_ouvidos": "Limpos, sem secreção.",
             "temperatura_celsius": "39.1",
             "frequencia_cardiaca_bpm": 120,
@@ -277,23 +349,24 @@ class ConsultaAPITests(AuthenticatedAPITestCase):
             "suspeitas_diagnosticas": "Virose ou infecção bacteriana.",
             "tratamento_prescrito": "Observação, fluidoterapia se necessário."
         }
+
         response = self.client.post(self.list_create_url, data, format='json')
-        # print(response.content) # Descomente para depurar se houver erro
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(Consulta.objects.filter(
-            pk=response.data['id']).exists())
+
+        # Verifica se a consulta foi criada corretamente
         nova_consulta = Consulta.objects.get(pk=response.data['id'])
         self.assertEqual(nova_consulta.anamnese_sistema_digestorio,
                          "Recusa alimentar, bebeu pouca água.")
         self.assertEqual(nova_consulta.sintomas_apresentados.count(), 2)
 
     def test_decimal_field_validation_consulta(self):
-        """Testa validação de campo decimal (ex: temperatura)."""
+        """Testa validação de campo decimal (temperatura)"""
         data = {
             "paciente": self.paciente_rex.pk,
             "tipo_consulta": "ROTINA",
-            "temperatura_celsius": "MUITO ALTA"  # Valor inválido para DecimalField
+            "temperatura_celsius": "MUITO ALTA"  # Valor inválido para decimal
         }
         response = self.client.post(self.list_create_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # Verifica mensagem de erro
         self.assertIn('temperatura_celsius', response.data)
