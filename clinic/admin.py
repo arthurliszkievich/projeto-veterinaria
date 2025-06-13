@@ -1,6 +1,6 @@
 # clinic/admin.py
 from django.contrib import admin
-from .models import Tutor, Paciente, Veterinario, Consulta, Sintoma
+from .models import Tutor, Paciente, Veterinario, Consulta, Sintoma, Doenca
 
 
 @admin.register(Tutor)
@@ -96,7 +96,8 @@ class PacienteAdmin(admin.ModelAdmin):
         ),
         (
             "Status e Controle",
-            {"fields": ("status", "observacoes_clinicas_relevantes", "data_cadastro")},
+            {"fields": ("status", "observacoes_clinicas_relevantes",
+                        "data_cadastro")},
         ),
     )
 
@@ -210,7 +211,8 @@ class ConsultaAdmin(admin.ModelAdmin):
                         "frequencia_cardiaca_bpm",
                         "frequencia_respiratoria_mpm",
                     ),
-                    ("tpc_segundos", "hidratacao_status", "escore_condicao_corporal"),
+                    ("tpc_segundos", "hidratacao_status",
+                     "escore_condicao_corporal"),
                     "exame_postura",
                     "exame_nivel_consciencia",
                     "exame_linfonodos_obs",
@@ -245,7 +247,8 @@ class ConsultaAdmin(admin.ModelAdmin):
         ),
         (
             "Exames e Diagnóstico Definitivo",
-            {"fields": ("exames_complementares_solicitados", "diagnostico_definitivo")},
+            {"fields": ("exames_complementares_solicitados",
+                        "diagnostico_definitivo")},
         ),
         (
             "Tratamento e Prognóstico",
@@ -287,3 +290,17 @@ class ConsultaAdmin(admin.ModelAdmin):
     get_tutor_nome.short_description = "Tutor do Paciente"  # type: ignore
     # Permite ordenação por esta coluna
     get_tutor_nome.admin_order_field = "paciente__tutor__nome_completo"  # type: ignore
+
+
+@admin.register(Doenca)
+class DoencaAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'get_sintomas_count')
+    search_fields = ('nome', 'descricao')
+
+    # Essencial para uma boa experiência de usuário ao associar muitos sintomas
+    filter_horizontal = ('sintomas_associados',)
+
+    @admin.display(description='Nº de Sintomas Associados')
+    def get_sintomas_count(self, obj):
+        """Retorna a contagem de sintomas associados."""
+        return obj.sintomas_associados.count()

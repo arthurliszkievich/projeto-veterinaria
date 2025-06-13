@@ -5,7 +5,7 @@ import random
 import datetime
 from django.utils import timezone
 from validate_docbr import CPF
-from .models import Tutor, Paciente, Veterinario, Sintoma, Consulta
+from .models import Tutor, Paciente, Veterinario, Sintoma, Consulta, Doenca
 
 # Configuração inicial para gerar dados fictícios em português do Brasil
 fake_pt_br = Faker('pt_BR')
@@ -272,12 +272,8 @@ class ConsultaFactory(DjangoModelFactory):
         'paragraph', nb_sentences=2), no_declaration=None)
 
     # Diagnóstico e tratamento
-    suspeitas_diagnosticas = factory.Faker('paragraph', nb_sentences=random.randint(
-        1, 3), variable_nb_sentences=True, locale='pt_BR')
     exames_complementares_solicitados = factory.Maybe('needs_exams', yes_declaration=factory.Faker(
         'sentence', nb_words=random.randint(3, 8)), no_declaration=None)
-    diagnostico_definitivo = factory.Maybe('has_definitive_diagnosis', yes_declaration=factory.Faker(
-        'sentence', nb_words=random.randint(2, 5)), no_declaration=None)
     tratamento_prescrito = factory.Maybe('needs_treatment', yes_declaration=factory.Faker(
         'paragraph', nb_sentences=random.randint(1, 3)), no_declaration=None)
     procedimentos_realizados = factory.Maybe('had_procedures', yes_declaration=factory.Faker(
@@ -296,24 +292,36 @@ class ConsultaFactory(DjangoModelFactory):
 
     # Adiciona sintomas após a criação da consulta
     @factory.post_generation
-    def sintomas_apresentados(obj, create, extracted, **kwargs):
+    def sintomas_apresentados(self, create, extracted, **kwargs):
         if not create:
             return
         if extracted:
-            # Usa sintomas fornecidos externamente
-            for sintoma in extracted:
-                obj.sintomas_apresentados.add(sintoma)
+            # Se uma lista foi passada na chamada do factory, usa ela.
+            # Ex: ConsultaFactory(sintomas_apresentados=[s1, s2])
+            self.sintomas_apresentados.add(*extracted)
         else:
-            # Adiciona 0-3 sintomas aleatórios do banco de dados
+            # Lógica padrão: adiciona alguns sintomas aleatórios.
             if Sintoma.objects.exists():
-                num_sintomas_a_adicionar = random.randint(
-                    0, min(Sintoma.objects.count(), 3))
-                if num_sintomas_a_adicionar > 0:
-                    sintomas_disponiveis = list(Sintoma.objects.all())
-                    sintomas_selecionados = random.sample(
-                        sintomas_disponiveis, num_sintomas_a_adicionar)
-                    for sintoma in sintomas_selecionados:
-                        obj.sintomas_apresentados.add(sintoma)
+                num_sintomas = random.randint(
+                    1, min(Sintoma.objects.count(), 3))
+                sintomas_selecionados = random.sample(
+                    list(Sintoma.objects.all()), num_sintomas)
+                self.sintomas_apresentados.add(*sintomas_selecionados)
+
+    # Adicione também os hooks para seus outros campos M2M
+    @factory.post_generation
+    def diagnosticos_suspeitos(self, create, extracted, **kwargs):
+        if not create:
+            return
+        if extracted:
+            self.diagnosticos_suspeitos.add(*extracted)
+
+    @factory.post_generation
+    def diagnosticos_definitivos(self, create, extracted, **kwargs):
+        if not create:
+            return
+        if extracted:
+            self.diagnosticos_definitivos.add(*extracted)
 
     class Params:
         # Parâmetros para controle de campos opcionais
@@ -323,7 +331,9 @@ class ConsultaFactory(DjangoModelFactory):
             lambda o: fake_pt_br.boolean(chance_of_getting_true=80))
         needs_exams = factory.LazyAttribute(
             lambda o: fake_pt_br.boolean(chance_of_getting_true=65))
-        has_definitive_diagnosis = factory.LazyAttribute(
+        add_suspected_diagnoses = factory.LazyAttribute(
+            lambda o: fake_pt_br.boolean(chance_of_getting_true=70))
+        add_definitive_diagnoses = factory.LazyAttribute(
             lambda o: fake_pt_br.boolean(chance_of_getting_true=50))
         needs_treatment = factory.LazyAttribute(
             lambda o: fake_pt_br.boolean(chance_of_getting_true=75))
@@ -331,3 +341,32 @@ class ConsultaFactory(DjangoModelFactory):
             lambda o: fake_pt_br.boolean(chance_of_getting_true=25))
         needs_return_visit = factory.LazyAttribute(
             lambda o: fake_pt_br.boolean(chance_of_getting_true=55))
+
+
+class DoencaFactory(factory.django.DjangoModelFactory):
+
+    """Factory para criar objetos Doenca com dados fictícios."""
+    class Meta:
+        model = Doenca
+        # Garante que não sejam criadas doenças duplicadas com o mesmo nome nos testes
+        django_get_or_create = ('nome',)
+
+    nome = factory.Sequence(lambda n: f'Doença Fictícia {n}')
+    descricao = factory.Faker('text', max_nb_chars=500, locale='pt_BR')
+
+    # Hook para associar sintomas após a criação da doença
+    @factory.post_generation
+    def sintomas_associados(self, create, extracted, **kwargs):
+        if not create:
+            # Se não estivermos salvando no banco de dados, não faz nada.
+            return
+
+        if extracted:
+            # Se uma lista de sintomas foi passada para o factory, usa ela.
+            # Ex: DoencaFactory(sintomas_associados=[sintoma1, sintoma2])
+            for sintoma in extracted:
+                self.sintomas_associados.add(sintoma)
+        else:
+            # Caso contrário, cria e associa 3 sintomas aleatórios por padrão.
+            for _ in range(3):
+                self.sintomas_associados.add(SintomaFactory())

@@ -6,6 +6,7 @@ from rest_framework.test import APITestCase
 from django.contrib.auth.models import User
 import datetime
 
+
 from .models import Tutor, Paciente, Veterinario, Sintoma, Consulta
 from .factories import (
     TutorFactory, PacienteFactory, VeterinarioFactory, SintomaFactory, ConsultaFactory
@@ -325,48 +326,79 @@ class ConsultaAPITests(AuthenticatedAPITestCase):
         # Deve encontrar 2 consultas
         self.assertEqual(response.data['count'], 2)
 
-    def test_criar_consulta_com_todos_os_campos_texto_anamnese_exame(self):
-        """Testa criação de consulta com todos os campos preenchidos"""
-        paciente_novo = PacienteFactory()  # Novo paciente para teste
 
-        # Dados completos para uma consulta
-        data = {
-            "paciente": paciente_novo.pk,
-            "veterinario_responsavel": self.vet1.pk,
-            "data_hora_agendamento": timezone.now().isoformat(),
-            "tipo_consulta": "EMERGENCIA",
-            "queixa_principal_tutor": "Animal muito quieto e não come.",
-            "historico_doenca_atual": "Começou ontem à noite, piorou hoje.",
-            "anamnese_sistema_respiratorio": "Respiração normal.",
-            "anamnese_sistema_cardiovascular": "Sem histórico de problemas cardíacos.",
-            "anamnese_sistema_digestorio": "Recusa alimentar, bebeu pouca água.",
-            # ... outros campos de anamnese ...
-            "examefisico_ouvidos": "Limpos, sem secreção.",
-            "temperatura_celsius": "39.1",
-            "frequencia_cardiaca_bpm": 120,
-            "observacoes_exame_fisico_geral": "Animal apático, mucosas levemente pálidas.",
-            "sintoma_ids_para_escrita": [self.sintoma_febre_consulta.pk, self.sintoma_tosse_consulta.pk],
-            "suspeitas_diagnosticas": "Virose ou infecção bacteriana.",
-            "tratamento_prescrito": "Observação, fluidoterapia se necessário."
-        }
+def test_criar_consulta_com_todos_os_campos_texto_anamnese_exame(self):
+    """Testa criação de consulta com todos os campos preenchidos."""
+    paciente_novo = PacienteFactory()  # Novo paciente para teste
 
-        response = self.client.post(self.list_create_url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    # Crie as instâncias de Doença que você vai associar
+    doenca_suspeita = DoencaFactory(nome="Virose Genérica")
 
-        # Verifica se a consulta foi criada corretamente
-        nova_consulta = Consulta.objects.get(pk=response.data['id'])
-        self.assertEqual(nova_consulta.anamnese_sistema_digestorio,
-                         "Recusa alimentar, bebeu pouca água.")
-        self.assertEqual(nova_consulta.sintomas_apresentados.count(), 2)
+    # Dados completos para uma consulta, ALINHADOS com o ConsultaSerializer
+    data = {
+        "paciente": paciente_novo.pk,
+        "veterinario_responsavel": self.vet1.pk,
+        "data_hora_agendamento": timezone.now().isoformat(),
+        "tipo_consulta": "EMERGENCIA",
+        "queixa_principal_tutor": "Animal muito quieto e não come.",
+        "historico_doenca_atual": "Começou ontem à noite, piorou hoje.",
+        "anamnese_sistema_respiratorio": "Respiração normal.",
+        "anamnese_sistema_cardiovascular": "Sem histórico de problemas cardíacos.",
+        "anamnese_sistema_digestorio": "Recusa alimentar, bebeu pouca água.",
+        "examefisico_ouvidos": "Limpos, sem secreção.",
+        "temperatura_celsius": "39.1",
+        "frequencia_cardiaca_bpm": 120,
+        "observacoes_exame_fisico_geral": "Animal apático, mucosas levemente pálidas.",
+        # A chave DEVE ser o nome do campo ManyToMany no modelo.
+        # O valor DEVE ser uma lista de IDs (PKs).
+        "sintomas_apresentados": [self.sintoma_febre_consulta.pk, self.sintoma_tosse_consulta.pk],
+        # O mesmo para os diagnósticos, usando o nome do campo do modelo.
+        "diagnosticos_suspeitos": [doenca_suspeita.pk],
+        "tratamento_prescrito": "Observação, fluidoterapia se necessário."
+    }
+
+    response = self.client.post(self.list_create_url, data, format='json')
+
+    # Verifique se a criação foi bem-sucedida (o response.data ajuda a debugar em caso de erro)
+    self.assertEqual(response.status_code,
+                     status.HTTP_201_CREATED, response.data)
+
+    # Verifica se a consulta foi criada corretamente no banco de dados
+    nova_consulta = Consulta.objects.get(pk=response.data['id'])
+    self.assertEqual(nova_consulta.anamnese_sistema_digestorio,
+                     "Recusa alimentar, bebeu pouca água.")
+
+    self.assertEqual(nova_consulta.sintomas_apresentados.count(), 2)
+    self.assertEqual(nova_consulta.diagnosticos_suspeitos.count(), 1)
+
+    # Verificação extra: o sintoma correto está lá?
+    self.assertIn(self.sintoma_febre_consulta,
+                  nova_consulta.sintomas_apresentados.all())
 
     def test_decimal_field_validation_consulta(self):
-        """Testa validação de campo decimal (temperatura)"""
+        """Testa validação de campo decimal (temperatura)."""
+
+        # Dados para a requisição. Inclui os campos obrigatórios (FKs)
+        # e o campo que queremos testar com um valor inválido.
         data = {
             "paciente": self.paciente_rex.pk,
+            "veterinario_responsavel": self.vet1.pk,
             "tipo_consulta": "ROTINA",
-            "temperatura_celsius": "MUITO ALTA"  # Valor inválido para decimal
+            "temperatura_celsius": "MUITO ALTA"  # Valor inválido para um campo DecimalField
         }
+
+        # Envia a requisição POST para o endpoint de criação
         response = self.client.post(self.list_create_url, data, format='json')
+
+        # 1. Verifica se a API retornou o status correto de erro (Bad Request)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        # Verifica mensagem de erro
+
+        # 2. Verifica se a resposta de erro contém a chave do campo problemático
         self.assertIn('temperatura_celsius', response.data)
+
+        # 3. (Opcional, mas recomendado) Verifica a mensagem de erro específica
+        #    Isso torna o teste mais robusto.
+        self.assertEqual(
+            str(response.data['temperatura_celsius'][0]),
+            'Um número válido é necessário.'
+        )

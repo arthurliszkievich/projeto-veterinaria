@@ -2,9 +2,9 @@ from django.db import IntegrityError
 from django.db.models.deletion import ProtectedError
 from rest_framework import status, viewsets, permissions
 from rest_framework.response import Response
-from .models import Tutor, Paciente, Veterinario, Consulta, Sintoma
+from .models import Tutor, Paciente, Veterinario, Consulta, Sintoma, Doenca
 from .serializers import (TutorSerializer, PacienteSerializer,
-                          VeterinarioSerializer, ConsultaSerializer, SintomaSerializer,)
+                          VeterinarioSerializer, ConsultaSerializer, SintomaSerializer, DoencaSerializer)
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend  # type: ignore
 
@@ -149,3 +149,13 @@ class ConsultaViewSet(viewsets.ModelViewSet):
                        'veterinario_responsavel__nome_completo']
 
     ordering = ['-data_criacao_registro']  # Mantém sua ordenação padrão
+
+
+class DoencaViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint que permite que doenças sejam visualizadas ou editadas.
+    """
+    queryset = Doenca.objects.all().prefetch_related('sintomas_associados')
+    serializer_class = DoencaSerializer
+    # Exemplo: todos podem ver, apenas autenticados podem editar
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]

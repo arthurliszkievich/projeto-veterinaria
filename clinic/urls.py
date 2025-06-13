@@ -6,6 +6,7 @@ from .views import (
     VeterinarioViewSet,
     ConsultaViewSet,
     SintomaViewSet,
+    DoencaViewSet,
 )
 
 # Cria um router e registra viewsets com ele
@@ -15,7 +16,7 @@ router.register(r"pacientes", PacienteViewSet, basename="paciente")
 router.register(r"veterinarios", VeterinarioViewSet, basename="veterinario")
 router.register(r"consultas", ConsultaViewSet, basename="consulta")
 router.register(r"sintomas", SintomaViewSet, basename="sintoma")
-
+router.register(r'doencas', DoencaViewSet, basename='doenca')
 
 urlpatterns = [
     path("", include(router.urls)),

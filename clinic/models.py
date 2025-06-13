@@ -3,7 +3,8 @@ from django.utils import timezone  # para utilizar a data e hora atuais
 
 
 class Tutor(models.Model):
-    nome_completo = models.CharField(max_length=255, verbose_name="Nome Completo")
+    nome_completo = models.CharField(
+        max_length=255, verbose_name="Nome Completo")
     cpf = models.CharField(
         max_length=14,
         unique=True,
@@ -106,7 +107,8 @@ class Paciente(models.Model):
     especie = models.CharField(
         max_length=10, choices=ESPECIE_CHOICES, verbose_name="Espécie"
     )
-    raca = models.CharField(max_length=100, blank=True, null=True, verbose_name="Raça")
+    raca = models.CharField(max_length=100, blank=True,
+                            null=True, verbose_name="Raça")
     data_nascimento = models.DateField(
         blank=True, null=True, verbose_name="Data de Nascimento"
     )
@@ -212,7 +214,8 @@ class Paciente(models.Model):
 
 
 class Veterinario(models.Model):
-    nome_completo = models.CharField(max_length=255, verbose_name="Nome do Veterinário")
+    nome_completo = models.CharField(
+        max_length=255, verbose_name="Nome do Veterinário")
     crmv = models.CharField(
         max_length=20, blank=True, null=True, unique=True, verbose_name="CRMV"
     )
@@ -227,7 +230,8 @@ class Veterinario(models.Model):
 
 
 class Sintoma(models.Model):
-    nome = models.CharField(max_length=200, unique=True, verbose_name="Nome do Sintoma")
+    nome = models.CharField(max_length=200, unique=True,
+                            verbose_name="Nome do Sintoma")
     descricao = models.TextField(
         blank=True, null=True, verbose_name="Descrição do Sintoma (opcional)"
     )
@@ -239,6 +243,38 @@ class Sintoma(models.Model):
 
     def __str__(self):
         return self.nome  # type: ignore
+
+
+class Doenca(models.Model):
+    """
+    Representa uma condição ou doença que serve como base de conhecimento.
+    Ex: 'Cinomose', 'Gastrite', 'Otite'.
+    """
+    nome = models.CharField(
+        max_length=200,
+        unique=True,
+        verbose_name="Nome da Doença"
+    )
+    descricao = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Descrição técnica, etiologia, informações gerais sobre a doença."
+    )
+
+    # Define quais sintomas estão COMUMENTE associados a esta doença.
+    sintomas_associados = models.ManyToManyField(
+        'Sintoma',
+        blank=True,
+        verbose_name="Sintomas Típicos Associados"
+    )
+
+    class Meta:
+        verbose_name = "Doença"
+        verbose_name_plural = "Doenças"
+        ordering = ['nome']
+
+    def __str__(self):
+        return self.nome
 
 
 class Consulta(models.Model):
@@ -461,18 +497,22 @@ class Consulta(models.Model):
         related_name="consultas_com_sintoma",
     )  # Corrigido related_name
 
-    suspeitas_diagnosticas = models.TextField(
+    diagnosticos_suspeitos = models.ManyToManyField(
+        Doenca,
+        related_name='consultas_com_suspeita',
         blank=True,
-        null=True,
-        verbose_name="Suspeita(s) Diagnóstica(s) / Diagnósticos Diferenciais",
+        verbose_name="Suspeitas Diagnósticas"
     )
     exames_complementares_solicitados = models.TextField(
         blank=True,
         null=True,
         verbose_name="Exames Complementares Solicitados/Realizados e Resultados",
     )
-    diagnostico_definitivo = models.TextField(
-        blank=True, null=True, verbose_name="Diagnóstico Definitivo"
+    diagnosticos_definitivos = models.ManyToManyField(
+        Doenca,
+        related_name='consultas_com_diagnostico_definitivo',
+        blank=True,
+        verbose_name="Diagnósticos Definitivos"
     )
     tratamento_prescrito = models.TextField(
         blank=True,
@@ -482,7 +522,8 @@ class Consulta(models.Model):
     procedimentos_realizados = models.TextField(
         blank=True, null=True, verbose_name="Procedimentos Realizados na Consulta"
     )
-    prognostico = models.TextField(blank=True, null=True, verbose_name="Prognóstico")
+    prognostico = models.TextField(
+        blank=True, null=True, verbose_name="Prognóstico")
     instrucoes_para_tutor = models.TextField(
         blank=True, null=True, verbose_name="Instruções para o Tutor e Orientações"
     )
