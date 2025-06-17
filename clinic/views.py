@@ -7,6 +7,7 @@ from .serializers import (TutorSerializer, PacienteSerializer,
                           VeterinarioSerializer, ConsultaSerializer, SintomaSerializer, DoencaSerializer)
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend  # type: ignore
+from .services import sugerir_diagnosticos
 
 
 class TutorViewSet(viewsets.ModelViewSet):
@@ -141,14 +142,85 @@ class ConsultaViewSet(viewsets.ModelViewSet):
         'paciente__tutor__nome_completo',
         'veterinario_responsavel__nome_completo',
         'queixa_principal_tutor',
-        'suspeitas_diagnosticas',
-        'diagnostico_definitivo',
+        'sintomas_apresentados__nome',
+        'diagnosticos_suspeitos__nome',
+        'diagnosticos_definitivos__nome',
         'tratamento_prescrito'
     ]
     ordering_fields = ['data_hora_agendamento', 'paciente__nome',
                        'veterinario_responsavel__nome_completo']
 
     ordering = ['-data_criacao_registro']  # Mantém sua ordenação padrão
+
+    def perform_create(self, serializer):
+        """
+        Sobrescreve o método para adicionar lógica de sugestão de diagnóstico
+        após a criação da consulta.
+        """
+        # Salva a consulta e seus relacionamentos M2M enviados no payload (como sintomas_apresentados)
+        consulta = serializer.save()
+
+        # Obtém os objetos Sintoma que foram efetivamente associados à consulta
+        sintomas_apresentados_objs = list(consulta.sintomas_apresentados.all())
+
+        if sintomas_apresentados_objs:
+            # Chama o serviço para obter as sugestões de diagnóstico
+            doencas_sugeridas = sugerir_diagnosticos(
+                sintomas_apresentados_objs)
+
+            if doencas_sugeridas:
+                # Define os diagnósticos suspeitos na instância da consulta
+                consulta.diagnosticos_suspeitos.set(doencas_sugeridas)
+            # Se não houver doenças sugeridas, o campo permanece como estava ou vazio (se era novo)
+            # ou você pode explicitamente limpar se essa for a lógica desejada:
+            # else:
+            #     consulta.diagnosticos_suspeitos.clear()
+        else:
+            # Se não houver sintomas apresentados, garante que os diagnósticos suspeitos sejam limpos
+            consulta.diagnosticos_suspeitos.clear()
+
+    def perform_update(self, serializer):
+        """
+        Sobrescreve o método para adicionar lógica de sugestão de diagnóstico
+        após a atualização da consulta.
+        """
+        # Salva a consulta e as atualizações em seus campos ManyToMany
+        consulta = serializer.save()
+
+        # Obtém os objetos Sintoma atualizados
+        sintomas_apresentados_objs = list(consulta.sintomas_apresentados.all())
+
+        # Começa com uma lista vazia para limpar sugestões antigas por padrão
+        doencas_sugeridas = []
+        if sintomas_apresentados_objs:
+            # Recalcula as sugestões se houver sintomas
+            doencas_sugeridas = sugerir_diagnosticos(
+                sintomas_apresentados_objs)
+
+        # Define os novos diagnósticos suspeitos. Se doencas_sugeridas for vazia,
+        # isso efetivamente limpará o campo ManyToMany.
+        consulta.diagnosticos_suspeitos.set(doencas_sugeridas)
+
+
+def perform_update(self, serializer):
+    """
+    Sobrescreve o método para adicionar lógica de sugestão de diagnóstico
+    após a atualização da consulta.
+    """
+
+    # 1. Salva a consulta e as atualizações em campos M2M
+    consulta = serializer.save()
+
+    # 2. Obtém os objetos Sintoma atualizados
+    sintomas_apresentados_objs = list(consulta.sintomas_apresentados.all())
+
+    # 3. Limpa sugestões anteriores e recalcula se houve sintomas
+    doencas_sugeridas = []
+    if sintomas_apresentados_objs:
+        doencas_sugeridas = sugerir_diagnosticos(sintomas_apresentados_objs)
+
+    # 4. Define os novos diagnósticos suspeitos
+    consulta.diagnosticos_suspeitos.set(doencas_sugeridas)
 
 
 class DoencaViewSet(viewsets.ModelViewSet):
