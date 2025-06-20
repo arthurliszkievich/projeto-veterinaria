@@ -126,7 +126,6 @@ class SintomaAdmin(admin.ModelAdmin):
 
 @admin.register(Consulta)
 class ConsultaAdmin(admin.ModelAdmin):
-    # Define as colunas exibidas na lista de consultas
     list_display = (
         "paciente",
         "data_hora_agendamento",
@@ -135,35 +134,24 @@ class ConsultaAdmin(admin.ModelAdmin):
         "get_tutor_nome",
         "data_criacao_registro",
     )
-
-    # Adiciona filtros na barra lateral da lista de consultas
     list_filter = (
         "tipo_consulta",
         "data_hora_agendamento",
-        # Filtrar pela espécie do pacient
         "veterinario_responsavel",
         "paciente__especie",
     )
-
-    # Define os campos pelos quais a busca pode ser feita
     search_fields = (
         "paciente__nome",
         "paciente__tutor__nome_completo",
         "veterinario_responsavel__nome_completo",
         "tipo_consulta",
-        "suspeitas_diagnosticas",
+        "diagnosticos_suspeitos__nome",
+        "diagnosticos_definitivos__nome",
     )
-
-    # Melhora a seleção de ForeignKeys com muitos itens
     autocomplete_fields = ["paciente", "veterinario_responsavel"]
-
-    # Adiciona uma hierarquia de navegação por data na lista de consultas
     date_hierarchy = "data_hora_agendamento"
-
-    # Define a ordenação padrão na lista de consultas (mais recentes primeiro)
     ordering = ["-data_hora_agendamento"]
 
-    # Organiza os campos no formulário de adição/edição de Consulta
     fieldsets = (
         (
             "Informações Gerais da Consulta",
@@ -183,9 +171,7 @@ class ConsultaAdmin(admin.ModelAdmin):
         (
             "Anamnese Especial (Revisão por Sistema)",
             {
-                # Descrição para a seção
                 "description": "Detalhes da anamnese para cada sistema do animal.",
-                # Faz a seção iniciar colapsada (opcional)
                 "classes": ("collapse",),
                 "fields": (
                     "anamnese_sistema_respiratorio",
@@ -197,6 +183,7 @@ class ConsultaAdmin(admin.ModelAdmin):
                     "anamnese_sistema_neurologico",
                     "anamnese_pele_anexos",
                     "anamnese_olhos",
+                    # "anamnese_ouvidos" - Adicionei este aqui, pois você tem o exame físico de ouvidos
                 ),
             },
         ),
@@ -205,7 +192,6 @@ class ConsultaAdmin(admin.ModelAdmin):
             {
                 "description": "Sinais vitais e observações gerais do exame físico.",
                 "fields": (
-                    # Agrupando campos relacionados na mesma linha para melhor layout
                     (
                         "temperatura_celsius",
                         "frequencia_cardiaca_bpm",
@@ -242,13 +228,14 @@ class ConsultaAdmin(admin.ModelAdmin):
             },
         ),
         (
+            # Nome da seção pode ser "Sintomas Apresentados e Diagnósticos Suspeitos"
             "Sintomas e Diagnóstico Inicial",
-            {"fields": ("sintomas_apresentados", "suspeitas_diagnosticas")},
+            {"fields": ("sintomas_apresentados", "diagnosticos_suspeitos")},
         ),
         (
             "Exames e Diagnóstico Definitivo",
             {"fields": ("exames_complementares_solicitados",
-                        "diagnostico_definitivo")},
+                        "diagnosticos_definitivos")},
         ),
         (
             "Tratamento e Prognóstico",
@@ -266,38 +253,33 @@ class ConsultaAdmin(admin.ModelAdmin):
         ),
         (
             "Datas de Controle",
-            {  # Seção para campos de data gerenciados automaticamente
+            {
                 "fields": ("data_criacao_registro", "data_ultima_modificacao"),
-                "classes": ("collapse",),  # Inicia colapsada
+                "classes": ("collapse",),
                 "description": "Datas de criação e última modificação do registro.",
             },
         ),
     )
 
-    # Melhora a interface para campos ManyToManyField
-    filter_horizontal = ("sintomas_apresentados",)
-
-    # Define campos que serão apenas de leitura no formulário do admin
+    filter_horizontal = (
+        "sintomas_apresentados",
+        "diagnosticos_suspeitos",
+    )
     readonly_fields = ("data_criacao_registro", "data_ultima_modificacao")
 
-    # Método para exibir o nome do tutor na lista de consultas
     def get_tutor_nome(self, obj):
         if obj.paciente and obj.paciente.tutor:
             return obj.paciente.tutor.nome_completo
-        return "N/A"  # Valor padrão se não houver tutor ou paciente
+        return "N/A"
 
-    # Nome mais descritivo para a coluna
     get_tutor_nome.short_description = "Tutor do Paciente"  # type: ignore
-    # Permite ordenação por esta coluna
     get_tutor_nome.admin_order_field = "paciente__tutor__nome_completo"  # type: ignore
 
 
 @admin.register(Doenca)
 class DoencaAdmin(admin.ModelAdmin):
     list_display = ('nome', 'get_sintomas_count')
-    search_fields = ('nome', 'descricao')
-
-    # Essencial para uma boa experiência de usuário ao associar muitos sintomas
+    search_fields = ('nome', 'descricao', 'sintomas_associados__nome')
     filter_horizontal = ('sintomas_associados',)
 
     @admin.display(description='Nº de Sintomas Associados')

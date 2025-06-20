@@ -3,14 +3,8 @@ from .models import Doenca
 
 def sugerir_diagnosticos(sintomas_apresentados_objs):
     """
-    Sugere diagnósticos (Doencas) com base em uma lista de objetos Sintoma apresentados.
-
-    Args:
-        sintomas_apresentados_objs (list ou QuerySet): Uma coleção de instâncias do modelo Sintoma.
-
-    Returns:
-        list: Uma lista de instâncias do modelo Doenca, ordenadas pela relevância (score),
-              ou uma lista vazia se nenhuma sugestão for encontrada ou se a entrada for vazia.
+    Sugere diagnósticos (Doencas) com base em uma lista de Sintomas apresentados.
+    Retorna uma lista de objetos Doenca, ordenados por relevância (score de proporção).
     """
 
     if not sintomas_apresentados_objs:
