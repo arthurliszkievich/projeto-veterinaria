@@ -117,11 +117,11 @@ class SintomaViewSet(viewsets.ModelViewSet):
 
 
 class ConsultaViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet para gerenciar as Consultas.
-    Permite listar, criar, atualizar e excluir Consultas.
-    """
-    queryset = Consulta.objects.all()
+    queryset = Consulta.objects.all().select_related(
+        'paciente__tutor', 'veterinario_responsavel'
+    ).prefetch_related(  # Otimiza queries para M2M na listagem/detalhe
+        'sintomas_apresentados', 'diagnosticos_suspeitos', 'diagnosticos_definitivos'
+    )
     serializer_class = ConsultaSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
@@ -129,98 +129,64 @@ class ConsultaViewSet(viewsets.ModelViewSet):
     filterset_fields = {
         'paciente': ['exact'],
         'paciente__nome': ['icontains'],
-        'paciente__tutor': ['exact'],
         'paciente__tutor__nome_completo': ['icontains'],
-        'veterinario_responsavel': ['exact'],
         'veterinario_responsavel__nome_completo': ['icontains'],
         'tipo_consulta': ['exact'],
-        # ['exact', 'gte', 'lte'], # 'gte' = maior ou igual, 'lte' = menor ou igual
         'data_hora_agendamento': ['date', 'date__gte', 'date__lte', 'year', 'month', 'day'],
     }
     search_fields = [
-        'paciente__nome',
-        'paciente__tutor__nome_completo',
-        'veterinario_responsavel__nome_completo',
-        'queixa_principal_tutor',
+        'paciente__nome', 'paciente__tutor__nome_completo', 'veterinario_responsavel__nome_completo',
+        'queixa_principal_tutor', 'historico_doenca_atual',
         'sintomas_apresentados__nome',
-        'diagnosticos_suspeitos__nome',
+        'diagnosticos_suspeitos__nome',  # Busca nos diagnósticos que foram salvos
         'diagnosticos_definitivos__nome',
         'tratamento_prescrito'
     ]
-    ordering_fields = ['data_hora_agendamento', 'paciente__nome',
-                       'veterinario_responsavel__nome_completo']
+    # Campos para ordenação na API (ex: ?ordering=data_hora_agendamento)
+    ordering_fields = ['data_hora_agendamento',
+                       'paciente__nome', 'tipo_consulta']
+    ordering = ['-data_criacao_registro']  # Ordenação padrão da listagem
 
-    ordering = ['-data_criacao_registro']  # Mantém sua ordenação padrão
+    def _processar_sugestoes_diagnostico(self, consulta_instance):
+        """Método auxiliar para calcular e anexar sugestões de diagnóstico."""
+        sintomas_apresentados_objs = list(
+            consulta_instance.sintomas_apresentados.all())
+
+        doencas_sugeridas_ordenadas = []
+        if sintomas_apresentados_objs:
+            doencas_sugeridas_ordenadas = sugerir_diagnosticos(
+                sintomas_apresentados_objs)
+            if doencas_sugeridas_ordenadas:
+                # Salva a relação no banco
+                consulta_instance.diagnosticos_suspeitos.set(
+                    doencas_sugeridas_ordenadas)
+            else:
+                consulta_instance.diagnosticos_suspeitos.clear()
+        else:
+            consulta_instance.diagnosticos_suspeitos.clear()
+
+        # Anexa a lista ORDENADA à instância para o SerializerMethodField usar na RESPOSTA
+        setattr(consulta_instance, '_diagnosticos_sugeridos_ordenados',
+                doencas_sugeridas_ordenadas)
 
     def perform_create(self, serializer):
-        """
-        Sobrescreve o método para adicionar lógica de sugestão de diagnóstico
-        após a criação da consulta.
-        """
-        # Salva a consulta e seus relacionamentos M2M enviados no payload (como sintomas_apresentados)
+        # Salva a consulta e os campos M2M enviados via _ids (sintomas_apresentados_ids, etc.)
         consulta = serializer.save()
-
-        # Obtém os objetos Sintoma que foram efetivamente associados à consulta
-        sintomas_apresentados_objs = list(consulta.sintomas_apresentados.all())
-
-        if sintomas_apresentados_objs:
-            # Chama o serviço para obter as sugestões de diagnóstico
-            doencas_sugeridas = sugerir_diagnosticos(
-                sintomas_apresentados_objs)
-
-            if doencas_sugeridas:
-                # Define os diagnósticos suspeitos na instância da consulta
-                consulta.diagnosticos_suspeitos.set(doencas_sugeridas)
-            # Se não houver doenças sugeridas, o campo permanece como estava ou vazio (se era novo)
-            # ou você pode explicitamente limpar se essa for a lógica desejada:
-            # else:
-            #     consulta.diagnosticos_suspeitos.clear()
-        else:
-            # Se não houver sintomas apresentados, garante que os diagnósticos suspeitos sejam limpos
-            consulta.diagnosticos_suspeitos.clear()
+        # Processa e anexa as sugestões de diagnóstico
+        self._processar_sugestoes_diagnostico(consulta)
 
     def perform_update(self, serializer):
-        """
-        Sobrescreve o método para adicionar lógica de sugestão de diagnóstico
-        após a atualização da consulta.
-        """
-        # Salva a consulta e as atualizações em seus campos ManyToMany
         consulta = serializer.save()
+        self._processar_sugestoes_diagnostico(consulta)
 
-        # Obtém os objetos Sintoma atualizados
-        sintomas_apresentados_objs = list(consulta.sintomas_apresentados.all())
-
-        # Começa com uma lista vazia para limpar sugestões antigas por padrão
-        doencas_sugeridas = []
-        if sintomas_apresentados_objs:
-            # Recalcula as sugestões se houver sintomas
-            doencas_sugeridas = sugerir_diagnosticos(
-                sintomas_apresentados_objs)
-
-        # Define os novos diagnósticos suspeitos. Se doencas_sugeridas for vazia,
-        # isso efetivamente limpará o campo ManyToMany.
-        consulta.diagnosticos_suspeitos.set(doencas_sugeridas)
-
-
-def perform_update(self, serializer):
-    """
-    Sobrescreve o método para adicionar lógica de sugestão de diagnóstico
-    após a atualização da consulta.
-    """
-
-    # 1. Salva a consulta e as atualizações em campos M2M
-    consulta = serializer.save()
-
-    # 2. Obtém os objetos Sintoma atualizados
-    sintomas_apresentados_objs = list(consulta.sintomas_apresentados.all())
-
-    # 3. Limpa sugestões anteriores e recalcula se houve sintomas
-    doencas_sugeridas = []
-    if sintomas_apresentados_objs:
-        doencas_sugeridas = sugerir_diagnosticos(sintomas_apresentados_objs)
-
-    # 4. Define os novos diagnósticos suspeitos
-    consulta.diagnosticos_suspeitos.set(doencas_sugeridas)
+    # Para garantir que a lista ordenada seja anexada também na resposta de retrieve (GET de um item)
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        # Recalcula e anexa as sugestões para garantir que a resposta tenha a ordem correta,
+        # mesmo que os sintomas da consulta tenham sido alterados fora do fluxo de create/update da API.
+        self._processar_sugestoes_diagnostico(instance)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
 
 class DoencaViewSet(viewsets.ModelViewSet):

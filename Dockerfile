@@ -32,12 +32,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # --- Estágio de Produção (Runtime) ---
 FROM python:3.10-slim-bookworm AS runtime
+ARG DJANGO_SECRET_KEY_ARG
 
 # Defina variáveis de ambiente para o runtime
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV DJANGO_SETTINGS_MODULE=config.settings
 ENV PYTHONIOENCODING=UTF-8
+ENV SECRET_KEY=${DJANGO_SECRET_KEY_ARG} 
 
 # Crie um diretório para a aplicação e um usuário não-root
 RUN groupadd -r django && useradd -r -g django django \

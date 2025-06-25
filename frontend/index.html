@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Consulta Veterinária</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Registrar Nova Consulta</h1>
+
+        <form id="novaConsultaForm">
+            <div class="form-group">
+                <label for="pacienteId">ID do Paciente:</label>
+                <input type="number" id="pacienteId" name="pacienteId" required>
+            </div>
+
+            <div class="form-group">
+                <label for="veterinarioId">ID do Veterinário Responsável:</label>
+                <input type="number" id="veterinarioId" name="veterinarioId" required>
+            </div>
+
+            <div class="form-group">
+                <label for="queixaPrincipal">Queixa Principal do Tutor:</label>
+                <textarea id="queixaPrincipal" name="queixaPrincipal" rows="3" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="historicoDoencaAtual">Histórico da Doença Atual:</label>
+                <textarea id="historicoDoencaAtual" name="historicoDoencaAtual" rows="3"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="temperaturaCelsius">Temperatura (°C):</label>
+                <input type="text" id="temperaturaCelsius" name="temperaturaCelsius" placeholder="Ex: 38.5">
+            </div>
+
+            <div class="form-group">
+                <h3>Sintomas Apresentados</h3>
+                <div id="listaSintomasCheckboxes">
+                    <!-- Checkboxes dos sintomas serão carregados aqui pelo JavaScript -->
+                    <p>Carregando sintomas...</p>
+                </div>
+            </div>
+
+            <button type="submit">Salvar Consulta e Sugerir Diagnósticos</button>
+        </form>
+
+        <div id="resultadoDiagnostico">
+            <h2>Diagnósticos Suspeitos:</h2>
+            <ul id="listaDiagnosticosSugeridos">
+                <!-- Diagnósticos sugeridos serão listados aqui -->
+            </ul>
+            <p id="mensagemErro" class="error-message"></p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

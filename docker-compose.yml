@@ -28,6 +28,8 @@ services: # Define os contêineres (serviços) da sua aplicação.
     build: # Define como construir a imagem para este serviço.
       context: . # Usa o diretório atual (onde está o docker-compose.yml) como contexto de build.
       dockerfile: Dockerfile # Especifica qual Dockerfile usar (neste caso, o nome padrão).
+      args:
+        DJANGO_SECRET_KEY_ARG: ${SECRET_KEY}
     # O comando CMD do Dockerfile (Gunicorn) será usado para iniciar.
     volumes:
       - .:/home/django/web # Para desenvolvimento, isso monta seu código local no container,

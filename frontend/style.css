@@ -1,0 +1,143 @@
+body {
+    font-family: sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 20px;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+.container {
+    max-width: 700px;
+    margin: auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+h1, h2, h3 {
+    color: #333;
+    margin-bottom: 0.7em;
+}
+
+.form-group {
+    margin-bottom: 1em;
+}
+
+.form-group label { /* Estilo geral para labels dos campos do formulário */
+    display: block;
+    margin-bottom: 0.3em;
+    font-weight: bold; /* Deixa os labels principais em negrito */
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.form-group textarea {
+    resize: vertical;
+}
+
+
+#listaSintomasCheckboxes {
+    max-height: 300px; /* Aumentado para mais visibilidade */
+    overflow-y: auto;
+    border: 1px solid #ccc; /* Borda um pouco mais escura */
+    padding: 15px;
+    border-radius: 4px;
+    background-color: #f9f9f9; /* Fundo levemente diferente para destaque */
+}
+
+/* Estilo para cada item (div) na lista de sintomas */
+#listaSintomasCheckboxes div {
+    padding: 6px 0; /* Espaçamento vertical entre itens */
+    border-bottom: 1px solid #eee; /* Linha separadora sutil */
+    display: flex; /* Para alinhar checkbox e label na mesma linha */
+    align-items: center; /* Alinha verticalmente no centro */
+    transition: background-color 0.2s ease-in-out; /* Transição suave para hover */
+}
+
+#listaSintomasCheckboxes div:hover {
+    background-color: #e9e9e9; /* Cor de fundo ao passar o mouse */
+}
+
+#listaSintomasCheckboxes div:last-child {
+    border-bottom: none; /* Remove a borda do último item */
+}
+
+/* Estilo para o input checkbox em si */
+#listaSintomasCheckboxes input[type="checkbox"] {
+    margin-right: 10px; /* Espaço maior entre o checkbox e o texto do label */
+    /* Aumenta o tamanho do checkbox para melhor clique/visualização */
+    width: 18px; 
+    height: 18px;
+    cursor: pointer;
+}
+
+/* Estilo para o label do sintoma */
+#listaSintomasCheckboxes label {
+    cursor: pointer; /* Indica que o label também é clicável para marcar/desmarcar */
+    flex-grow: 1; /* Faz o label ocupar o espaço restante na linha */
+    font-weight: normal; /* Reset para normal, pois o :checked + label mudará */
+    margin-bottom: 0; /* Remove margem inferior se houver do estilo geral de label */
+    display: inline; /* Para funcionar bem com o flex da div pai */
+}
+
+/* FEEDBACK VISUAL QUANDO O CHECKBOX ESTÁ MARCADO */
+#listaSintomasCheckboxes input[type="checkbox"]:checked + label {
+    font-weight: bold;
+    color: #28a745; /* Verde para indicar seleção */
+}
+
+
+button[type="submit"] {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background-color: #5cb85c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 15px; /* Espaço acima do botão */
+}
+
+button[type="submit"]:hover {
+    background-color: #4cae4c;
+}
+
+#resultadoDiagnostico {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #eee;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+}
+
+#listaDiagnosticosSugeridos {
+    list-style: none;
+    padding-left: 0;
+}
+
+#listaDiagnosticosSugeridos li {
+    padding: 5px 0;
+    border-bottom: 1px dotted #ddd;
+}
+
+#listaDiagnosticosSugeridos li:last-child {
+    border-bottom: none;
+}
+
+.error-message {
+    color: red;
+    font-weight: bold;
+}

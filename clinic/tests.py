@@ -380,8 +380,8 @@ class ConsultaAPITests(AuthenticatedAPITestCase):
             "frequencia_cardiaca_bpm": 120,
             "observacoes_exame_fisico_geral": "Animal apático, mucosas levemente pálidas.",
             # Envia os PKs dos sintomas
-            "sintomas_apresentados": [sint_api_1.pk, sint_api_2.pk],
-            "diagnosticos_definitivos": [],
+            "sintomas_apresentados_ids": [sint_api_1.pk, sint_api_2.pk],
+            "diagnosticos_definitivos_ids": [],
             "tratamento_prescrito": "Observação, fluidoterapia se necessário."
         }
 
@@ -466,7 +466,7 @@ class ConsultaAPITests(AuthenticatedAPITestCase):
         detail_url = reverse(
             'consulta-detail', kwargs={'pk': consulta_inicial.pk})
         payload_atualizacao = {
-            "sintomas_apresentados": []  # Remove todos os sintomas
+            "sintomas_apresentados_ids": []  # Remove todos os sintomas
         }
         response = self.client.patch(
             detail_url, payload_atualizacao, format='json')
