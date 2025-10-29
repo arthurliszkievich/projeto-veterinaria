@@ -1,61 +1,50 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Consulta Veterinária</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="container">
-        <h1>Registrar Nova Consulta</h1>
-
-        <form id="novaConsultaForm">
-            <div class="form-group">
-                <label for="pacienteId">ID do Paciente:</label>
-                <input type="number" id="pacienteId" name="pacienteId" required>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ZoeVet - Sistema Veterinário</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <header class="site-header">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">🐾</span>
+                    <h1>ZoeVet</h1>
+                </div>
+                <p class="tagline">Sistema de Gestão Veterinária</p>
             </div>
+        </header>
 
-            <div class="form-group">
-                <label for="veterinarioId">ID do Veterinário Responsável:</label>
-                <input type="number" id="veterinarioId" name="veterinarioId" required>
-            </div>
+        <div class="welcome-container">
+            <div class="welcome-card">
+                <h2>Bem-vindo ao ZoeVet</h2>
+                <p class="subtitle">Sistema Interno - Acesso Restrito</p>
 
-            <div class="form-group">
-                <label for="queixaPrincipal">Queixa Principal do Tutor:</label>
-                <textarea id="queixaPrincipal" name="queixaPrincipal" rows="3" required></textarea>
-            </div>
+                <div class="user-type-grid">
+                    <a href="login-funcionario.html" class="user-type-card">
+                        <div class="user-type-icon">👨‍⚕️</div>
+                        <h3>Veterinário</h3>
+                        <p>Acesso para veterinários e equipe clínica</p>
+                    </a>
 
-            <div class="form-group">
-                <label for="historicoDoencaAtual">Histórico da Doença Atual:</label>
-                <textarea id="historicoDoencaAtual" name="historicoDoencaAtual" rows="3"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="temperaturaCelsius">Temperatura (°C):</label>
-                <input type="text" id="temperaturaCelsius" name="temperaturaCelsius" placeholder="Ex: 38.5">
-            </div>
-
-            <div class="form-group">
-                <h3>Sintomas Apresentados</h3>
-                <div id="listaSintomasCheckboxes">
-                    <!-- Checkboxes dos sintomas serão carregados aqui pelo JavaScript -->
-                    <p>Carregando sintomas...</p>
+                    <a href="login-gerente.html" class="user-type-card">
+                        <div class="user-type-icon">👔</div>
+                        <h3>Administrador</h3>
+                        <p>Acesso administrativo completo e gestão</p>
+                    </a>
                 </div>
             </div>
-
-            <button type="submit">Salvar Consulta e Sugerir Diagnósticos</button>
-        </form>
-
-        <div id="resultadoDiagnostico">
-            <h2>Diagnósticos Suspeitos:</h2>
-            <ul id="listaDiagnosticosSugeridos">
-                <!-- Diagnósticos sugeridos serão listados aqui -->
-            </ul>
-            <p id="mensagemErro" class="error-message"></p>
         </div>
-    </div>
 
-    <script src="script.js"></script>
-</body>
+        <footer class="site-footer">
+            <div class="footer-content">
+                <p>&copy; 2025 ZoeVet - Sistema de Gestão Veterinária</p>
+                <p class="footer-links">
+                    <a href="#">Sobre</a> • <a href="#">Suporte</a> • <a href="#">Privacidade</a>
+                </p>
+            </div>
+        </footer>
+    </body>
 </html>
