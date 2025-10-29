@@ -1,0 +1,41 @@
+# ESLint
+node_modules/
+*.min.js
+dist/
+build/
+
+# Python
+*.pyc
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+db.sqlite3
+*.log
+logs/
+
+# Django
+*.pot
+*.pyc
+staticfiles/
+mediafiles/
+local_settings.py
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Outros
+.env
+*.bak

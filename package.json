@@ -1,0 +1,19 @@
+{
+  "name": "projeto-veterinaria-frontend",
+  "version": "1.0.0",
+  "description": "Sistema de Gerenciamento de Clínica Veterinária - Frontend",
+  "scripts": {
+    "lint": "eslint frontend/**/*.js",
+    "lint:fix": "eslint frontend/**/*.js --fix",
+    "format": "prettier --write frontend/**/*.{js,html,css}"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "prettier": "^3.3.3"
+  },
+  "keywords": ["veterinaria", "frontend", "javascript"],
+  "author": "",
+  "license": "MIT"
+}
