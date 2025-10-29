@@ -2,16 +2,21 @@
 Django settings for config project.
 """
 
-from datetime import timedelta  # Importe timedelta
+import os
+from datetime import timedelta
 from pathlib import Path
-import os  # Importar os
-from dotenv import load_dotenv  # Importar dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Carregar variáveis de ambiente do arquivo .env
-load_dotenv(BASE_DIR / ".env")  # Procura o .env na raiz do projeto Django
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(BASE_DIR / ".env")
+except ImportError:
+    # python-dotenv não está instalado, continua sem carregar .env
+    pass
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -47,9 +52,9 @@ INSTALLED_APPS = [
     # Apps de Terceiros
     "rest_framework",
     "rest_framework_simplejwt",  # Para autenticação JWT
-    "dotenv",
     "django_filters",  # Para filtros
     "corsheaders",
+    "drf_spectacular",  # Para documentação da API
 ]
 
 MIDDLEWARE = [
@@ -93,20 +98,21 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": os.getenv("SQL_ENGINE", "django.db.backends.sqlite3"),
-        "NAME": os.getenv("SQL_DATABASE", BASE_DIR / "db.sqlite3"),
-        "USER": os.getenv("SQL_USER"),
-        "PASSWORD": os.getenv("SQL_PASSWORD"),  # Será None se não definido
-        "HOST": os.getenv("SQL_HOST"),  # Será None se não definido
-        "PORT": os.getenv("SQL_PORT"),  # Será None se não definido
+        "NAME": os.getenv("SQL_DATABASE", str(BASE_DIR / "db.sqlite3")),
+        "USER": os.getenv("SQL_USER", ""),
+        "PASSWORD": os.getenv("SQL_PASSWORD", ""),
+        "HOST": os.getenv("SQL_HOST", ""),
+        "PORT": os.getenv("SQL_PORT", ""),
     }
 }
 
 
 # Garante que NAME seja um Path para SQLite se SQL_ENGINE for sqlite3 e NAME não for um path
-if DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3" and not isinstance(
-    DATABASES["default"]["NAME"], Path
-):
-    DATABASES["default"]["NAME"] = BASE_DIR / DATABASES["default"]["NAME"]
+if DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3":
+    db_name = DATABASES["default"]["NAME"]
+    if db_name and not os.path.isabs(db_name):
+        # Converte string relativa para Path absoluto
+        DATABASES["default"]["NAME"] = str(BASE_DIR / db_name)
 
 
 # Password validation
@@ -175,11 +181,10 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [  # Definindo permissões padrão
         "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ],
-
-    "DEFAULT_AUTHENTICATION_CLASSES": (  # <<< ADICIONE ESTE BLOCO
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-
     # Exemplo de paginação padrão
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 10,  # Tamanho da página para paginação
@@ -192,7 +197,6 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": False,
     "UPDATE_LAST_LOGIN": False,
-
     "ALGORITHM": "HS256",
     "SIGNING_KEY": SECRET_KEY,
     "VERIFYING_KEY": None,
@@ -200,29 +204,131 @@ SIMPLE_JWT = {
     "ISSUER": None,
     "JWK_URL": None,
     "LEEWAY": 0,
-
     "AUTH_HEADER_TYPES": ("Bearer",),
     "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
     "USER_AUTHENTICATION_RULE": "rest_framework_simplejwt.authentication.default_user_authentication_rule",
-
     "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
     "TOKEN_TYPE_CLAIM": "token_type",
     "TOKEN_USER_CLASS": "rest_framework_simplejwt.models.TokenUser",
-
     "JTI_CLAIM": "jti",
-
     "SLIDING_TOKEN_REFRESH_EXP_CLAIM": "refresh_exp",
     "SLIDING_TOKEN_LIFETIME": timedelta(minutes=5),  # Padrão
     "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(days=1),  # Padrão
 }
 
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5500",
-    "http://127.0.0.1:5500",
+# ==================== CONFIGURAÇÕES DE CORS ====================
+# Configurações para Cross-Origin Resource Sharing (CORS)
+# Permite que o frontend em diferentes origens acesse a API
+
+# Lista de origens permitidas (para produção)
+CORS_ALLOWED_ORIGINS_STRING = os.getenv("CORS_ALLOWED_ORIGINS", "")
+if CORS_ALLOWED_ORIGINS_STRING:
+    CORS_ALLOWED_ORIGINS = [
+        origin.strip()
+        for origin in CORS_ALLOWED_ORIGINS_STRING.split(",")
+        if origin.strip()
+    ]
+else:
+    # Configuração padrão para desenvolvimento
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+
+# Permite todos os métodos HTTP
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
 ]
+
+# Permite headers personalizados
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
+
+# Permite cookies e credenciais
+CORS_ALLOW_CREDENTIALS = True
+
+# Em desenvolvimento, pode-se permitir todas as origens (NÃO USE EM PRODUÇÃO!)
+# CORS_ALLOW_ALL_ORIGINS = True  # Descomente apenas para testes locais
+
+
+# ==================== CONFIGURAÇÕES DE LOGGING ====================
+# Configuração de logging para desenvolvimento e produção
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{levelname}] {asctime} {name} {module} {funcName}: {message}",
+            "style": "{",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
+        "simple": {
+            "format": "[{levelname}] {message}",
+            "style": "{",
+        },
+    },
+    "filters": {
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        "file": {
+            "level": "INFO",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": BASE_DIR / "logs" / "django.log",
+            "maxBytes": 1024 * 1024 * 5,  # 5 MB
+            "backupCount": 5,
+            "formatter": "verbose",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "clinic": {
+            "handlers": ["console", "file"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "WARNING",
+    },
+}
+
+# Criar diretório de logs se não existir
+LOGS_DIR = BASE_DIR / "logs"
+if not LOGS_DIR.exists():
+    LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
