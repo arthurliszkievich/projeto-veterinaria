@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Novo Tutor - ZoeVet</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <header class="site-header">
+            <div class="header-content">
+                <a href="dashboard.html" class="logo-link">
+                    <div class="logo">
+                        <span class="logo-icon">🐾</span>
+                        <h1>ZoeVet</h1>
+                    </div>
+                </a>
+                <p class="tagline">Sistema de Gestão Veterinária</p>
+            </div>
+        </header>
+
+        <div class="container">
+            <header class="page-header">
+                <h1>Cadastrar Novo Tutor</h1>
+                <nav class="breadcrumb">
+                    <a href="dashboard.html">Painel Principal</a> &gt;
+                    <a href="novo-paciente.html">Novo Paciente</a> &gt; Novo Tutor
+                </nav>
+            </header>
+
+            <div class="dashboard-content">
+                <form id="novoTutorForm">
+                    <div class="form-group">
+                        <label for="nome_completo">Nome Completo:*</label>
+                        <input
+                            type="text"
+                            id="nome_completo"
+                            name="nome_completo"
+                            required
+                            placeholder="Ex: João da Silva"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cpf">CPF:*</label>
+                        <input
+                            type="text"
+                            id="cpf"
+                            name="cpf"
+                            required
+                            placeholder="000.000.000-00"
+                            maxlength="14"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">E-mail:*</label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            required
+                            placeholder="tutor@email.com"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="telefone">Telefone:*</label>
+                        <input
+                            type="text"
+                            id="telefone"
+                            name="telefone"
+                            required
+                            placeholder="(00) 00000-0000"
+                            maxlength="15"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="endereco">Endereço:</label>
+                        <textarea
+                            id="endereco"
+                            name="endereco"
+                            placeholder="Rua, número, bairro, cidade..."
+                        ></textarea>
+                    </div>
+
+                    <p id="tutorErrorMessage" class="error-message hidden"></p>
+                    <p id="tutorSuccessMessage" class="success-message hidden"></p>
+
+                    <div style="display: flex; gap: 1rem">
+                        <button type="submit" id="submitTutorButton">Cadastrar Tutor</button>
+                        <button
+                            type="button"
+                            onclick="window.history.back()"
+                            style="background: var(--text-light)"
+                        >
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <footer class="site-footer">
+            <div class="footer-content">
+                <p>&copy; 2025 ZoeVet - Sistema de Gestão Veterinária</p>
+            </div>
+        </footer>
+
+        <script src="script.js"></script>
+    </body>
+</html>

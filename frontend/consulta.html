@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Nova Consulta - ZoeVet</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <header class="site-header">
+            <div class="header-content">
+                <a href="dashboard.html" class="logo-link">
+                    <div class="logo">
+                        <span class="logo-icon">🐾</span>
+                        <h1>ZoeVet</h1>
+                    </div>
+                </a>
+                <p class="tagline">Sistema de Gestão Veterinária</p>
+            </div>
+        </header>
+
+        <div class="container">
+            <header class="page-header">
+                <h1>Registrar Nova Consulta</h1>
+                <nav class="breadcrumb">
+                    <a href="dashboard.html">Painel Principal</a> &gt; Nova Consulta
+                </nav>
+            </header>
+
+            <div class="dashboard-content">
+                <form id="novaConsultaForm">
+                    <div class="form-group">
+                        <label for="pacienteSelect">Paciente:</label>
+                        <select id="pacienteSelect" name="paciente" required>
+                            <option value="">Carregando...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="veterinarioSelect">Veterinário Responsável:</label>
+                        <select id="veterinarioSelect" name="veterinario_responsavel" required>
+                            <option value="">Carregando...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="queixa_principal_tutor">Queixa Principal do Tutor:</label>
+                        <textarea
+                            id="queixa_principal_tutor"
+                            name="queixa_principal_tutor"
+                            required
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="historico_doenca_atual">Histórico da Doença Atual:</label>
+                        <textarea
+                            id="historico_doenca_atual"
+                            name="historico_doenca_atual"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="temperatura_celsius">Temperatura (°C):</label>
+                        <input
+                            type="text"
+                            id="temperatura_celsius"
+                            name="temperatura_celsius"
+                            placeholder="Ex: 38.5"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Sintomas Apresentados:</label>
+                        <div id="listaSintomasCheckboxes">
+                            <p>Carregando sintomas...</p>
+                        </div>
+                    </div>
+
+                    <p id="mensagemErro" class="error-message hidden"></p>
+
+                    <button type="submit" id="submitButton">
+                        Salvar Consulta e Sugerir Diagnósticos
+                    </button>
+                </form>
+
+                <div id="resultadoDiagnostico" class="hidden">
+                    <h3>Diagnósticos Suspeitos:</h3>
+                    <ul id="listaDiagnosticosSugeridos"></ul>
+                </div>
+            </div>
+        </div>
+
+        <footer class="site-footer">
+            <div class="footer-content">
+                <p>&copy; 2025 ZoeVet - Sistema de Gestão Veterinária</p>
+            </div>
+        </footer>
+
+        <script src="script.js"></script>
+    </body>
+</html>

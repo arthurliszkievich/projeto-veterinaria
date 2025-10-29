@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Gerenciar Pacientes - ZoeVet</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <header class="site-header">
+            <div class="header-content">
+                <a href="dashboard.html" class="logo-link">
+                    <div class="logo">
+                        <span class="logo-icon">🐾</span>
+                        <h1>ZoeVet</h1>
+                    </div>
+                </a>
+                <p class="tagline">Sistema de Gestão Veterinária</p>
+            </div>
+        </header>
+
+        <div class="container">
+            <header class="page-header">
+                <h1>Gerenciamento de Pacientes</h1>
+                <nav class="breadcrumb">
+                    <a href="dashboard.html">Painel Principal</a> &gt; Pacientes
+                </nav>
+            </header>
+
+            <div class="search-bar">
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Buscar paciente por nome, raça, tutor..."
+                />
+                <button id="searchButton">Buscar</button>
+            </div>
+
+            <div class="table-container">
+                <table id="patientTable">
+                    <thead>
+                        <tr>
+                            <th>Nome do Paciente</th>
+                            <th>Espécie</th>
+                            <th>Raça</th>
+                            <th>Tutor</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="patientTableBody">
+                        <tr>
+                            <td colspan="5" style="text-align: center">Carregando pacientes...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <footer class="site-footer">
+            <div class="footer-content">
+                <p>&copy; 2025 ZoeVet - Sistema de Gestão Veterinária</p>
+            </div>
+        </footer>
+
+        <script src="script.js"></script>
+    </body>
+</html>
