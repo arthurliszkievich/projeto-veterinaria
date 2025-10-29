@@ -1,189 +1,385 @@
+import logging
+
 from django.db import IntegrityError
 from django.db.models.deletion import ProtectedError
-from rest_framework import status, viewsets, permissions
-from rest_framework.response import Response
-from .models import Tutor, Paciente, Veterinario, Consulta, Sintoma, Doenca
-from .serializers import (TutorSerializer, PacienteSerializer,
-                          VeterinarioSerializer, ConsultaSerializer, SintomaSerializer, DoencaSerializer)
-from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend  # type: ignore
+from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+
+from .constants import (
+    DEFAULT_PAGE_SIZE,
+    ERROR_GENERIC,
+    ERROR_INTEGRITY_ERROR,
+    ERROR_TUTOR_PROTECTED_DELETE,
+    MAX_PAGE_SIZE,
+)
+from .models import Consulta, Doenca, Paciente, Sintoma, Tutor, Veterinario
+from .serializers import (
+    ConsultaSerializer,
+    DoencaSerializer,
+    PacienteSerializer,
+    SintomaSerializer,
+    TutorSerializer,
+    UserRegisterSerializer,
+    UserSerializer,
+    VeterinarioSerializer,
+)
 from .services import sugerir_diagnosticos
+
+# Configurar logger
+logger = logging.getLogger(__name__)
+
+
+class StandardResultsSetPagination(PageNumberPagination):
+    """
+    Paginação padrão para a API.
+
+    Configurações:
+    - Tamanho padrão: 20 itens por página
+    - Tamanho máximo: 100 itens por página
+    - Permite ao cliente definir o tamanho via query param 'page_size'
+    """
+
+    page_size = DEFAULT_PAGE_SIZE
+    page_size_query_param = "page_size"
+    max_page_size = MAX_PAGE_SIZE
 
 
 class TutorViewSet(viewsets.ModelViewSet):
     """
     ViewSet para gerenciar os Tutores.
-    Permite listar, criar, atualizar e excluir Tutores.
+
+    Endpoints:
+    - GET /tutores/ - Lista todos os tutores (com paginação)
+    - POST /tutores/ - Cria um novo tutor
+    - GET /tutores/{id}/ - Detalha um tutor específico
+    - PUT/PATCH /tutores/{id}/ - Atualiza um tutor
+    - DELETE /tutores/{id}/ - Remove um tutor (se não houver pacientes)
+
+    Filtros disponíveis:
+    - cpf, email, endereco_cidade, endereco_uf, nome_completo
+
+    Busca (search):
+    - nome_completo, cpf, email, observacoes, endereco_rua, endereco_bairro
+
+    Ordenação (ordering):
+    - nome_completo, data_cadastro, endereco_cidade
     """
 
     queryset = Tutor.objects.all()
     serializer_class = TutorSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = StandardResultsSetPagination
 
     filter_backends = [
         DjangoFilterBackend,
         SearchFilter,
         OrderingFilter,
-    ]  # Adiciona os novos backends
+    ]
     filterset_fields = [
-        "cpf", "email", "endereco_cidade", "endereco_uf", "nome_completo",]
-    search_fields = ["nome_completo", "cpf", "email",
-                     "observacoes", "endereco_rua", "endereco_bairro",]
-    ordering_fields = ["nome_completo", "data_cadastro", "endereco_cidade",]
+        "cpf",
+        "email",
+        "endereco_cidade",
+        "endereco_uf",
+        "nome_completo",
+    ]
+    search_fields = [
+        "nome_completo",
+        "cpf",
+        "email",
+        "observacoes",
+        "endereco_rua",
+        "endereco_bairro",
+    ]
+    ordering_fields = [
+        "nome_completo",
+        "data_cadastro",
+        "endereco_cidade",
+    ]
 
     def destroy(self, request, *args, **kwargs):
+        """
+        Remove um tutor do sistema.
+
+        Se o tutor tiver pacientes associados, a operação é bloqueada
+        e uma mensagem informativa é retornada com a lista de pacientes.
+
+        Returns:
+            Response: Confirmação de exclusão ou erro com detalhes
+        """
         try:
             return super().destroy(request, *args, **kwargs)
         except ProtectedError as e:
             # Captura os pacientes que estão protegendo o tutor
             pacientes_protegidos = list(e.protected_objects)
-            nomes_pacientes = [p.nome for p in pacientes_protegidos]
+            nomes_pacientes = [p.nome for p in pacientes_protegidos]  # type: ignore
+
+            logger.warning(
+                f"Tentativa de excluir tutor com pacientes associados: {nomes_pacientes}"
+            )
 
             return Response(
-                {
-                    "detail": "Não é possível excluir o tutor porque existem pacientes associados.",
-                    "pacientes": nomes_pacientes
-                },
-                status=status.HTTP_400_BAD_REQUEST
+                {"detail": ERROR_TUTOR_PROTECTED_DELETE, "pacientes": nomes_pacientes},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except IntegrityError as e:
+            logger.error(f"Erro de integridade ao excluir tutor: {str(e)}")
+            return Response(
+                {"detail": ERROR_INTEGRITY_ERROR}, status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Erro inesperado ao excluir tutor: {str(e)}")
+            return Response(
+                {"detail": ERROR_GENERIC}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
 class PacienteViewSet(viewsets.ModelViewSet):
     """
     ViewSet para gerenciar os Pacientes.
-    Permite listar, criar, atualizar e excluir Pacientes.
-    """
-    # queryset = Onde pega os dados
-    queryset = Paciente.objects.all()
-    # serializer_class = serializar e deserializar os dados
-    serializer_class = PacienteSerializer
-    # Permissões de acesso
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
-    filter_backends = [DjangoFilterBackend, SearchFilter,
-                       OrderingFilter]  # Adiciona os novos backends
+    Endpoints:
+    - GET /pacientes/ - Lista todos os pacientes
+    - POST /pacientes/ - Registra um novo paciente
+    - GET /pacientes/{id}/ - Detalha um paciente específico
+    - PUT/PATCH /pacientes/{id}/ - Atualiza informações do paciente
+    - DELETE /pacientes/{id}/ - Remove um paciente
+
+    Filtros disponíveis:
+    - tutor, tutor__nome_completo, especie, raca, status, sexo, nome
+
+    Ordenação padrão: nome (alfabética)
+    """
+
+    queryset = Paciente.objects.all()
+    serializer_class = PacienteSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = StandardResultsSetPagination
+
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = {
-        'tutor': ['exact'],  # Filtra por ID exato do tutor
-        # Filtra se nome do tutor contém (case-insensitive)
-        'tutor__nome_completo': ['icontains'],
-        'especie': ['exact'],  # Filtra por espécie exata
-        'raca': ['icontains'],  # Filtra se raça contém (case-insensitive)
-        'status': ['exact'],
-        'sexo': ['exact'],
-        # Filtra se nome do paciente contém (case-insensitive)
-        'nome': ['icontains']
+        "tutor": ["exact"],
+        "tutor__nome_completo": ["icontains"],
+        "especie": ["exact"],
+        "raca": ["icontains"],
+        "status": ["exact"],
+        "sexo": ["exact"],
+        "nome": ["icontains"],
     }
-    search_fields = ['nome', 'raca', 'microchip', 'observacoes_clinicas',
-                     'alergias_conhecidas', 'tutor__nome_completo']
-    ordering_fields = ['nome', 'data_nascimento',
-                       'especie', 'tutor__nome_completo', 'peso_kg']
-    ordering = ['nome']
+    search_fields = [
+        "nome",
+        "raca",
+        "microchip",
+        "observacoes_clinicas_relevantes",
+        "alergias_conhecidas",
+        "tutor__nome_completo",
+    ]
+    ordering_fields = [
+        "nome",
+        "data_nascimento",
+        "especie",
+        "tutor__nome_completo",
+        "peso_kg",
+    ]
+    ordering = ["nome"]
 
 
 class VeterinarioViewSet(viewsets.ModelViewSet):
     """
     ViewSet para gerenciar os Veterinários.
-    Permite listar, criar, atualizar e excluir Veterinários.
+
+    Endpoints:
+    - GET /veterinarios/ - Lista todos os veterinários
+    - POST /veterinarios/ - Cadastra um novo veterinário
+    - GET /veterinarios/{id}/ - Detalha um veterinário específico
+    - PUT/PATCH /veterinarios/{id}/ - Atualiza dados do veterinário
+    - DELETE /veterinarios/{id}/ - Remove um veterinário
     """
+
     queryset = Veterinario.objects.all()
     serializer_class = VeterinarioSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = StandardResultsSetPagination
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['crmv', 'nome_completo']
-    search_fields = ['nome_completo', 'crmv']
-    ordering_fields = ['nome_completo']
-    ordering = ['nome_completo']
+    filterset_fields = ["crmv", "nome_completo"]
+    search_fields = ["nome_completo", "crmv"]
+    ordering_fields = ["nome_completo"]
+    ordering = ["nome_completo"]
 
 
 class SintomaViewSet(viewsets.ModelViewSet):
     """
     ViewSet para gerenciar os Sintomas.
-    Permite listar, criar, atualizar e excluir Sintomas.
+
+    Sintomas são utilizados para registrar manifestações clínicas
+    e auxiliar no sistema de sugestão de diagnósticos.
+
+    Endpoints:
+    - GET /sintomas/ - Lista todos os sintomas
+    - POST /sintomas/ - Cadastra um novo sintoma
+    - GET /sintomas/{id}/ - Detalha um sintoma específico
+    - PUT/PATCH /sintomas/{id}/ - Atualiza informações do sintoma
+    - DELETE /sintomas/{id}/ - Remove um sintoma
     """
+
     queryset = Sintoma.objects.all()
     serializer_class = SintomaSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = StandardResultsSetPagination
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = {
-        # Permite nome exato e "contém" (case-insensitive)
-        'nome': ['exact', 'icontains'],
-        'descricao': ['icontains']
-    }
-    search_fields = ['nome', 'descricao']
-    ordering_fields = ['nome', 'id']
-    ordering = ['nome']
+    filterset_fields = {"nome": ["exact", "icontains"], "descricao": ["icontains"]}
+    search_fields = ["nome", "descricao"]
+    ordering_fields = ["nome", "id"]
+    ordering = ["nome"]
 
 
 class ConsultaViewSet(viewsets.ModelViewSet):
-    queryset = Consulta.objects.all().select_related(
-        'paciente__tutor', 'veterinario_responsavel'
-    ).prefetch_related(  # Otimiza queries para M2M na listagem/detalhe
-        'sintomas_apresentados', 'diagnosticos_suspeitos', 'diagnosticos_definitivos'
+    """
+    ViewSet para gerenciar as Consultas.
+
+    Este é o endpoint principal para registro e acompanhamento de consultas veterinárias.
+    Inclui sugestão automática de diagnósticos baseada nos sintomas apresentados.
+
+    Endpoints:
+    - GET /consultas/ - Lista todas as consultas
+    - POST /consultas/ - Registra uma nova consulta
+    - GET /consultas/{id}/ - Detalha uma consulta específica
+    - PUT/PATCH /consultas/{id}/ - Atualiza informações da consulta
+    - DELETE /consultas/{id}/ - Remove uma consulta
+
+    Funcionalidades especiais:
+    - Sugestão automática de diagnósticos com base em sintomas
+    - Queries otimizadas com select_related e prefetch_related
+    - Filtros avançados por paciente, veterinário, data e tipo
+    """
+
+    queryset = (
+        Consulta.objects.all()
+        .select_related("paciente__tutor", "veterinario_responsavel")
+        .prefetch_related(
+            "sintomas_apresentados",
+            "diagnosticos_suspeitos",
+            "diagnosticos_definitivos",
+        )
     )
     serializer_class = ConsultaSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = StandardResultsSetPagination
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = {
-        'paciente': ['exact'],
-        'paciente__nome': ['icontains'],
-        'paciente__tutor__nome_completo': ['icontains'],
-        'veterinario_responsavel__nome_completo': ['icontains'],
-        'tipo_consulta': ['exact'],
-        'data_hora_agendamento': ['date', 'date__gte', 'date__lte', 'year', 'month', 'day'],
+        "paciente": ["exact"],
+        "paciente__nome": ["icontains"],
+        "paciente__tutor__nome_completo": ["icontains"],
+        "veterinario_responsavel__nome_completo": ["icontains"],
+        "tipo_consulta": ["exact"],
+        "data_hora_agendamento": [
+            "date",
+            "date__gte",
+            "date__lte",
+            "year",
+            "month",
+            "day",
+        ],
     }
     search_fields = [
-        'paciente__nome', 'paciente__tutor__nome_completo', 'veterinario_responsavel__nome_completo',
-        'queixa_principal_tutor', 'historico_doenca_atual',
-        'sintomas_apresentados__nome',
-        'diagnosticos_suspeitos__nome',  # Busca nos diagnósticos que foram salvos
-        'diagnosticos_definitivos__nome',
-        'tratamento_prescrito'
+        "paciente__nome",
+        "paciente__tutor__nome_completo",
+        "veterinario_responsavel__nome_completo",
+        "queixa_principal_tutor",
+        "historico_doenca_atual",
+        "sintomas_apresentados__nome",
+        "diagnosticos_suspeitos__nome",
+        "diagnosticos_definitivos__nome",
+        "tratamento_prescrito",
     ]
-    # Campos para ordenação na API (ex: ?ordering=data_hora_agendamento)
-    ordering_fields = ['data_hora_agendamento',
-                       'paciente__nome', 'tipo_consulta']
-    ordering = ['-data_criacao_registro']  # Ordenação padrão da listagem
+    ordering_fields = ["data_hora_agendamento", "paciente__nome", "tipo_consulta"]
+    ordering = ["-data_criacao_registro"]
 
     def _processar_sugestoes_diagnostico(self, consulta_instance):
-        """Método auxiliar para calcular e anexar sugestões de diagnóstico."""
-        sintomas_apresentados_objs = list(
-            consulta_instance.sintomas_apresentados.all())
+        """
+        Método auxiliar para calcular e anexar sugestões de diagnóstico.
+
+        Utiliza o serviço sugerir_diagnosticos para calcular as doenças mais prováveis
+        com base nos sintomas apresentados pelo paciente.
+
+        Args:
+            consulta_instance (Consulta): Instância da consulta a processar
+
+        Side Effects:
+            - Atualiza o campo diagnosticos_suspeitos da consulta
+            - Anexa atributo _diagnosticos_sugeridos_ordenados à instância
+        """
+        sintomas_apresentados_objs = list(consulta_instance.sintomas_apresentados.all())
 
         doencas_sugeridas_ordenadas = []
         if sintomas_apresentados_objs:
+            logger.info(
+                f"Processando sugestões de diagnóstico para consulta {consulta_instance.id}"
+            )
             doencas_sugeridas_ordenadas = sugerir_diagnosticos(
-                sintomas_apresentados_objs)
+                sintomas_apresentados_objs
+            )
             if doencas_sugeridas_ordenadas:
-                # Salva a relação no banco
                 consulta_instance.diagnosticos_suspeitos.set(
-                    doencas_sugeridas_ordenadas)
+                    doencas_sugeridas_ordenadas
+                )
+                logger.debug(
+                    f"Salvos {len(doencas_sugeridas_ordenadas)} diagnósticos suspeitos"
+                )
             else:
                 consulta_instance.diagnosticos_suspeitos.clear()
+                logger.debug("Nenhum diagnóstico suspeito encontrado")
         else:
             consulta_instance.diagnosticos_suspeitos.clear()
+            logger.debug("Nenhum sintoma apresentado")
 
         # Anexa a lista ORDENADA à instância para o SerializerMethodField usar na RESPOSTA
-        setattr(consulta_instance, '_diagnosticos_sugeridos_ordenados',
-                doencas_sugeridas_ordenadas)
+        setattr(
+            consulta_instance,
+            "_diagnosticos_sugeridos_ordenados",
+            doencas_sugeridas_ordenadas,
+        )
 
     def perform_create(self, serializer):
-        # Salva a consulta e os campos M2M enviados via _ids (sintomas_apresentados_ids, etc.)
+        """
+        Cria uma nova consulta e processa sugestões de diagnóstico.
+
+        Args:
+            serializer: Serializer validado com os dados da consulta
+        """
         consulta = serializer.save()
-        # Processa e anexa as sugestões de diagnóstico
         self._processar_sugestoes_diagnostico(consulta)
+        logger.info(f"Nova consulta criada: ID {consulta.id}")
 
     def perform_update(self, serializer):
+        """
+        Atualiza uma consulta existente e recalcula sugestões de diagnóstico.
+
+        Args:
+            serializer: Serializer validado com os dados atualizados
+        """
         consulta = serializer.save()
         self._processar_sugestoes_diagnostico(consulta)
+        logger.info(f"Consulta atualizada: ID {consulta.id}")
 
-    # Para garantir que a lista ordenada seja anexada também na resposta de retrieve (GET de um item)
     def retrieve(self, request, *args, **kwargs):
+        """
+        Recupera uma consulta específica com sugestões de diagnóstico recalculadas.
+
+        Garante que a resposta sempre contenha as sugestões mais atualizadas,
+        mesmo que os sintomas tenham sido alterados fora do fluxo da API.
+
+        Returns:
+            Response: Dados completos da consulta com diagnósticos sugeridos
+        """
         instance = self.get_object()
-        # Recalcula e anexa as sugestões para garantir que a resposta tenha a ordem correta,
-        # mesmo que os sintomas da consulta tenham sido alterados fora do fluxo de create/update da API.
         self._processar_sugestoes_diagnostico(instance)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
@@ -191,9 +387,76 @@ class ConsultaViewSet(viewsets.ModelViewSet):
 
 class DoencaViewSet(viewsets.ModelViewSet):
     """
-    API endpoint que permite que doenças sejam visualizadas ou editadas.
+    ViewSet para gerenciar as Doenças (Base de Conhecimento).
+
+    As doenças são utilizadas como base de conhecimento para o sistema
+    de sugestão de diagnósticos. Cada doença pode ter sintomas associados
+    que são usados para calcular a probabilidade de diagnóstico.
+
+    Endpoints:
+    - GET /doencas/ - Lista todas as doenças cadastradas
+    - POST /doencas/ - Cadastra uma nova doença
+    - GET /doencas/{id}/ - Detalha uma doença específica
+    - PUT/PATCH /doencas/{id}/ - Atualiza informações da doença
+    - DELETE /doencas/{id}/ - Remove uma doença
     """
-    queryset = Doenca.objects.all().prefetch_related('sintomas_associados')
+
+    queryset = Doenca.objects.all().prefetch_related("sintomas_associados")
     serializer_class = DoencaSerializer
-    # Exemplo: todos podem ver, apenas autenticados podem editar
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = StandardResultsSetPagination
+
+
+# ==============================
+# VIEWS DE AUTENTICAÇÃO
+# ==============================
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def register_user(request):
+    """
+    Endpoint para registro de novos usuários.
+
+    Aceita:
+    - username (obrigatório)
+    - email (obrigatório)
+    - password (obrigatório, mínimo 8 caracteres)
+    - password2 (obrigatório, confirmação de senha)
+    - first_name (opcional)
+    - last_name (opcional)
+    - user_type (opcional: cliente, funcionario, gerente)
+
+    Retorna:
+    - 201: Usuário criado com sucesso
+    - 400: Erros de validação
+    """
+    serializer = UserRegisterSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.save()
+        user_data = UserSerializer(user).data
+        return Response(
+            {"message": "Usuário criado com sucesso!", "user": user_data},
+            status=status.HTTP_201_CREATED,
+        )
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET"])
+def get_user_info(request):
+    """
+    Endpoint para obter informações do usuário autenticado.
+
+    Requer autenticação JWT.
+
+    Retorna:
+    - 200: Dados do usuário
+    - 401: Não autenticado
+    """
+    if not request.user.is_authenticated:
+        return Response(
+            {"detail": "Não autenticado."}, status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    serializer = UserSerializer(request.user)
+    return Response(serializer.data, status=status.HTTP_200_OK)
