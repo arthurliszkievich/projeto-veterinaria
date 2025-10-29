@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Login Gerente - ZoeVet</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <header class="site-header">
+            <div class="header-content">
+                <a href="index.html" class="logo-link">
+                    <div class="logo">
+                        <span class="logo-icon">🐾</span>
+                        <h1>ZoeVet</h1>
+                    </div>
+                </a>
+            </div>
+        </header>
+
+        <div class="login-container">
+            <form id="loginForm" data-user-type="gerente">
+                <div class="form-header">
+                    <div class="form-icon">👔</div>
+                    <h1>Acesso Administrativo</h1>
+                    <p class="form-subtitle">Entre com suas credenciais de administrador</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="username">Usuário:</label>
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        required
+                        placeholder="Seu usuário"
+                    />
+                </div>
+                <div class="form-group">
+                    <label for="password">Senha:</label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        required
+                        placeholder="Sua senha"
+                    />
+                </div>
+                <button type="submit" id="loginButton" class="btn-primary">Entrar</button>
+                <p id="loginErrorMessage" class="error-message hidden"></p>
+
+                <div class="form-footer">
+                    <p>
+                        <a href="index.html" class="back-link">← Voltar para seleção</a>
+                    </p>
+                </div>
+            </form>
+        </div>
+
+        <footer class="site-footer">
+            <div class="footer-content">
+                <p>&copy; 2025 ZoeVet - Sistema de Gestão Veterinária</p>
+            </div>
+        </footer>
+
+        <script src="script.js"></script>
+    </body>
+</html>
