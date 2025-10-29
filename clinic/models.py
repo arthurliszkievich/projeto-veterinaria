@@ -1,32 +1,49 @@
 from django.db import models
-from django.utils import timezone  # para utilizar a data e hora atuais
+from django.utils import timezone
+
+from .constants import (
+    ESPECIE_CHOICES,
+    HELP_TEXT_CEP_FORMAT,
+    HELP_TEXT_CPF_FORMAT,
+    HELP_TEXT_PACIENTE_FOTO,
+    HELP_TEXT_TUTOR_OBSERVACOES,
+    SEXO_CHOICES,
+    STATUS_CHOICES,
+    TIPO_CONSULTA_CHOICES,
+)
 
 
 class Tutor(models.Model):
-    nome_completo = models.CharField(
-        max_length=255, verbose_name="Nome Completo")
+    """
+    Modelo que representa o tutor (proprietário) de um paciente.
+
+    Um tutor pode ter múltiplos pacientes associados.
+    O CPF é validado tanto no serializer quanto no modelo.
+    """
+
+    nome_completo = models.CharField(max_length=255, verbose_name="Nome Completo")
     cpf = models.CharField(
         max_length=14,
         unique=True,
         verbose_name="CPF",
-        help_text="formato: XXX.XXX.XXX-XX",
+        help_text=HELP_TEXT_CPF_FORMAT,
+        db_index=True,  # Índice para buscas rápidas por CPF
     )
     telefone_principal = models.CharField(
         max_length=20, blank=True, null=True, verbose_name="Telefone Principal"
     )
     telefone_secundario = models.CharField(
-        # Corrigido 'Secundario' para 'Secundário'
         max_length=20,
         blank=True,
         null=True,
         verbose_name="Telefone Secundário",
     )
     email = models.EmailField(
-        # Adicionado blank=True, null=True se for opcional mas único
         unique=True,
         blank=True,
         null=True,
         verbose_name="E-mail",
+        db_index=True,  # Índice para buscas rápidas por email
     )
     endereco_rua = models.CharField(
         max_length=255, blank=True, null=True, verbose_name="Rua/Avenida"
@@ -51,7 +68,7 @@ class Tutor(models.Model):
         blank=True,
         null=True,
         verbose_name="CEP",
-        help_text="formato: XXXXX-XXX",
+        help_text=HELP_TEXT_CEP_FORMAT,
     )
     data_cadastro = models.DateTimeField(
         default=timezone.now, verbose_name="Data de Cadastro"
@@ -60,43 +77,33 @@ class Tutor(models.Model):
         blank=True,
         null=True,
         verbose_name="Observações",
-        help_text="Informações adicionais sobre o tutor",
+        help_text=HELP_TEXT_TUTOR_OBSERVACOES,
     )
 
     class Meta:
         verbose_name = "Tutor"
         verbose_name_plural = "Tutores"
         ordering = ["nome_completo"]
+        indexes = [
+            models.Index(fields=["cpf"], name="tutor_cpf_idx"),
+            models.Index(fields=["email"], name="tutor_email_idx"),
+        ]
 
     def __str__(self):
         return self.nome_completo
 
 
 class Paciente(models.Model):
-    ESPECIE_CHOICES = [
-        ("CANINO", "Canino"),
-        ("FELINO", "Felino"),
-        ("AVE", "Ave"),
-        ("REPTIL", "Réptil"),
-        ("ROEDOR", "Roedor"),
-        ("LAGOMORFO", "Lagomorfo (Coelho)"),
-        ("OUTRO", "Outro"),
-    ]
-    SEXO_CHOICES = [
-        ("M", "Macho"),
-        ("F", "Fêmea"),
-        ("MC", "Macho Castrado"),
-        ("FC", "Fêmea Castrada"),
-        ("IND", "Indefinido"),
-    ]
-    STATUS_CHOICES = [
-        ("ATIVO", "Ativo"),
-        ("OBITO", "Óbito"),
-        ("TRANSFERIDO", "Transferido"),
-        ("PERDIDO", "Perdido"),
-    ]
+    """
+    Modelo que representa um paciente (animal) da clínica.
 
-    nome = models.CharField(max_length=100, verbose_name="Nome do Paciente")
+    Cada paciente está vinculado a um tutor e contém informações
+    completas sobre histórico médico, características físicas e comportamentais.
+    """
+
+    nome = models.CharField(
+        max_length=100, verbose_name="Nome do Paciente", db_index=True
+    )
     tutor = models.ForeignKey(
         Tutor,
         on_delete=models.PROTECT,
@@ -107,8 +114,7 @@ class Paciente(models.Model):
     especie = models.CharField(
         max_length=10, choices=ESPECIE_CHOICES, verbose_name="Espécie"
     )
-    raca = models.CharField(max_length=100, blank=True,
-                            null=True, verbose_name="Raça")
+    raca = models.CharField(max_length=100, blank=True, null=True, verbose_name="Raça")
     data_nascimento = models.DateField(
         blank=True, null=True, verbose_name="Data de Nascimento"
     )
@@ -116,7 +122,12 @@ class Paciente(models.Model):
         max_length=3, choices=SEXO_CHOICES, blank=True, null=True, verbose_name="Sexo"
     )
     microchip = models.CharField(
-        max_length=50, blank=True, null=True, unique=True, verbose_name="Microchip"
+        max_length=50,
+        blank=True,
+        null=True,
+        unique=True,
+        verbose_name="Microchip",
+        db_index=True,
     )
     cor_pelagem = models.CharField(
         max_length=50, blank=True, null=True, verbose_name="Cor da Pelagem"
@@ -163,7 +174,7 @@ class Paciente(models.Model):
         blank=True,
         null=True,
         verbose_name="Foto",
-        help_text="Foto do paciente",
+        help_text=HELP_TEXT_PACIENTE_FOTO,
     )
     observacoes_clinicas_relevantes = models.TextField(
         blank=True, null=True, verbose_name="Outras Observações Clínicas Relevantes"
@@ -173,14 +184,23 @@ class Paciente(models.Model):
         verbose_name = "Paciente"
         verbose_name_plural = "Pacientes"
         ordering = ["nome"]
+        indexes = [
+            models.Index(fields=["nome"], name="paciente_nome_idx"),
+            models.Index(fields=["microchip"], name="paciente_microchip_idx"),
+            models.Index(fields=["tutor", "nome"], name="paciente_tutor_nome_idx"),
+        ]
 
     def __str__(self):
-        # fmt: off
         return f"{self.nome} (Espécie: {self.get_especie_display()}) - Tutor: {self.tutor.nome_completo}"  # type: ignore
-        # fmt: on
 
     @property
     def idade(self):
+        """
+        Calcula e retorna a idade do paciente de forma legível.
+
+        Returns:
+            str: Idade em anos, meses ou dias, dependendo da idade
+        """
         if self.data_nascimento:
             hoje = timezone.now().date()
             anos = (
@@ -214,8 +234,7 @@ class Paciente(models.Model):
 
 
 class Veterinario(models.Model):
-    nome_completo = models.CharField(
-        max_length=255, verbose_name="Nome do Veterinário")
+    nome_completo = models.CharField(max_length=255, verbose_name="Nome do Veterinário")
     crmv = models.CharField(
         max_length=20, blank=True, null=True, unique=True, verbose_name="CRMV"
     )
@@ -230,8 +249,7 @@ class Veterinario(models.Model):
 
 
 class Sintoma(models.Model):
-    nome = models.CharField(max_length=200, unique=True,
-                            verbose_name="Nome do Sintoma")
+    nome = models.CharField(max_length=200, unique=True, verbose_name="Nome do Sintoma")
     descricao = models.TextField(
         blank=True, null=True, verbose_name="Descrição do Sintoma (opcional)"
     )
@@ -250,43 +268,40 @@ class Doenca(models.Model):
     Representa uma condição ou doença que serve como base de conhecimento.
     Ex: 'Cinomose', 'Gastrite', 'Otite'.
     """
-    nome = models.CharField(
-        max_length=200,
-        unique=True,
-        verbose_name="Nome da Doença"
-    )
+
+    nome = models.CharField(max_length=200, unique=True, verbose_name="Nome da Doença")
     descricao = models.TextField(
         blank=True,
         null=True,
-        help_text="Descrição técnica, etiologia, informações gerais sobre a doença."
+        help_text="Descrição técnica, etiologia, informações gerais sobre a doença.",
     )
 
     # Define quais sintomas estão COMUMENTE associados a esta doença.
     sintomas_associados = models.ManyToManyField(
-        'Sintoma',
-        blank=True,
-        verbose_name="Sintomas Típicos Associados"
+        "Sintoma", blank=True, verbose_name="Sintomas Típicos Associados"
     )
 
     class Meta:
         verbose_name = "Doença"
         verbose_name_plural = "Doenças"
-        ordering = ['nome']
+        ordering = ["nome"]
 
     def __str__(self):
         return self.nome
 
 
 class Consulta(models.Model):
-    TIPO_CONSULTA_CHOICES = [
-        ("ROTINA", "Rotina/Check-up"),
-        ("EMERGENCIA", "Emergência"),
-        ("VACINACAO", "Vacinação"),
-        ("CIRURGIA", "Cirurgia/Procedimento"),
-        ("POS_CIRURGICO", "Pós-Cirúrgico"),
-        ("RETORNO", "Retorno"),
-        ("OUTRO", "Outro"),
-    ]
+    """
+    Modelo que representa uma consulta veterinária.
+
+    Registra todas as informações de uma consulta, incluindo:
+    - Anamnese completa por sistemas
+    - Exame físico geral e específico
+    - Sintomas apresentados
+    - Diagnósticos suspeitos (gerados automaticamente)
+    - Diagnósticos definitivos (confirmados pelo veterinário)
+    - Tratamento prescrito e orientações
+    """
 
     paciente = models.ForeignKey(
         Paciente,
@@ -499,9 +514,9 @@ class Consulta(models.Model):
 
     diagnosticos_suspeitos = models.ManyToManyField(
         Doenca,
-        related_name='consultas_com_suspeita',
+        related_name="consultas_com_suspeita",
         blank=True,
-        verbose_name="Suspeitas Diagnósticas"
+        verbose_name="Suspeitas Diagnósticas",
     )
     exames_complementares_solicitados = models.TextField(
         blank=True,
@@ -510,9 +525,9 @@ class Consulta(models.Model):
     )
     diagnosticos_definitivos = models.ManyToManyField(
         Doenca,
-        related_name='consultas_com_diagnostico_definitivo',
+        related_name="consultas_com_diagnostico_definitivo",
         blank=True,
-        verbose_name="Diagnósticos Definitivos"
+        verbose_name="Diagnósticos Definitivos",
     )
     tratamento_prescrito = models.TextField(
         blank=True,
@@ -522,8 +537,7 @@ class Consulta(models.Model):
     procedimentos_realizados = models.TextField(
         blank=True, null=True, verbose_name="Procedimentos Realizados na Consulta"
     )
-    prognostico = models.TextField(
-        blank=True, null=True, verbose_name="Prognóstico")
+    prognostico = models.TextField(blank=True, null=True, verbose_name="Prognóstico")
     instrucoes_para_tutor = models.TextField(
         blank=True, null=True, verbose_name="Instruções para o Tutor e Orientações"
     )
