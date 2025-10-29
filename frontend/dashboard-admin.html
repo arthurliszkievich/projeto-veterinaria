@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Dashboard Administrativo - ZoeVet</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <header class="site-header">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">🐾</span>
+                    <h1>ZoeVet</h1>
+                </div>
+                <p class="tagline">Sistema de Gestão Veterinária - Painel Administrativo</p>
+            </div>
+        </header>
+
+        <div class="container dashboard-wrapper">
+            <header class="dashboard-header">
+                <h1>Painel Administrativo</h1>
+                <div class="user-info">
+                    <span class="admin-badge">👔 Administrador</span>
+                    <span
+                        >Bem-vindo(a),
+                        <span id="userName" class="user-name">Carregando...</span>!</span
+                    >
+                    <button id="logoutButton">Sair</button>
+                </div>
+            </header>
+
+            <nav class="dashboard-nav">
+                <!-- Funcionalidades Clínicas -->
+                <div class="nav-section">
+                    <h3 class="nav-section-title">📋 Gestão Clínica</h3>
+                    <a href="consulta.html" class="nav-button">📋 Registrar Nova Consulta</a>
+                    <a href="novo-paciente.html" class="nav-button">🐾 Cadastrar Paciente</a>
+                    <a href="pacientes.html" class="nav-button">📊 Listar Pacientes</a>
+                    <a href="novo-tutor.html" class="nav-button">👤 Cadastrar Tutor</a>
+                </div>
+
+                <!-- Funcionalidades Administrativas (Exclusivas) -->
+                <div class="nav-section admin-only">
+                    <h3 class="nav-section-title">⚙️ Administração (Acesso Exclusivo)</h3>
+                    <a href="#" class="nav-button admin-feature disabled"
+                        >📈 Relatórios e Estatísticas (em breve)</a
+                    >
+                    <a href="#" class="nav-button admin-feature disabled"
+                        >👥 Gerenciar Usuários (em breve)</a
+                    >
+                    <a href="#" class="nav-button admin-feature disabled"
+                        >💰 Relatórios Financeiros (em breve)</a
+                    >
+                    <a href="#" class="nav-button admin-feature disabled"
+                        >🔧 Configurações do Sistema (em breve)</a
+                    >
+                    <a href="#" class="nav-button admin-feature disabled"
+                        >📦 Gestão de Estoque (em breve)</a
+                    >
+                    <a href="#" class="nav-button admin-feature disabled"
+                        >📝 Logs de Auditoria (em breve)</a
+                    >
+                </div>
+
+                <!-- Outras Funcionalidades -->
+                <div class="nav-section">
+                    <h3 class="nav-section-title">📅 Outros</h3>
+                    <a href="#" class="nav-button disabled">📅 Agendamentos (em breve)</a>
+                </div>
+            </nav>
+
+            <main class="dashboard-content">
+                <h2>Visão Geral do Sistema</h2>
+                <div class="admin-stats">
+                    <div class="stat-card">
+                        <h3>👨‍⚕️ Total de Veterinários</h3>
+                        <p class="stat-number">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>🐾 Total de Pacientes</h3>
+                        <p class="stat-number">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>👤 Total de Tutores</h3>
+                        <p class="stat-number">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>📋 Consultas Hoje</h3>
+                        <p class="stat-number">-</p>
+                    </div>
+                </div>
+                <p class="info-text">
+                    Como administrador, você tem acesso completo ao sistema, incluindo relatórios,
+                    gestão de usuários e configurações avançadas.
+                </p>
+            </main>
+        </div>
+
+        <footer class="site-footer">
+            <div class="footer-content">
+                <p>&copy; 2025 ZoeVet - Sistema de Gestão Veterinária</p>
+                <p class="footer-links">
+                    <a href="#">Sobre</a> • <a href="#">Suporte</a> • <a href="#">Privacidade</a>
+                </p>
+            </div>
+        </footer>
+
+        <script src="script.js"></script>
+    </body>
+</html>
