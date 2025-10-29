@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Dashboard - ZoeVet</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <header class="site-header">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">🐾</span>
+                    <h1>ZoeVet</h1>
+                </div>
+                <p class="tagline">Sistema de Gestão Veterinária</p>
+            </div>
+        </header>
+
+        <div class="container dashboard-wrapper">
+            <header class="dashboard-header">
+                <h1>Painel Principal</h1>
+                <div class="user-info">
+                    <span
+                        >Bem-vindo(a),
+                        <span id="userName" class="user-name">Carregando...</span>!</span
+                    >
+                    <button id="logoutButton">Sair</button>
+                </div>
+            </header>
+
+            <nav class="dashboard-nav">
+                <a href="consulta.html" class="nav-button">📋 Registrar Nova Consulta</a>
+                <a href="novo-paciente.html" class="nav-button">🐾 Cadastrar Paciente</a>
+                <a href="pacientes.html" class="nav-button">📊 Listar Pacientes</a>
+                <a href="novo-tutor.html" class="nav-button">👤 Cadastrar Tutor</a>
+                <a href="#" class="nav-button disabled">📅 Agendamentos (em breve)</a>
+                <a href="#" class="nav-button disabled">📈 Relatórios (em breve)</a>
+            </nav>
+
+            <main class="dashboard-content">
+                <h2>Atividade Recente</h2>
+                <p>Funcionalidades do dashboard serão implementadas aqui.</p>
+            </main>
+        </div>
+
+        <footer class="site-footer">
+            <div class="footer-content">
+                <p>&copy; 2025 ZoeVet - Sistema de Gestão Veterinária</p>
+                <p class="footer-links">
+                    <a href="#">Sobre</a> • <a href="#">Suporte</a> • <a href="#">Privacidade</a>
+                </p>
+            </div>
+        </footer>
+
+        <script src="script.js"></script>
+    </body>
+</html>
