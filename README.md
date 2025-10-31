@@ -122,11 +122,6 @@ O back-end robusto gerencia todas as entidades (tutores, pacientes, veterinário
 *   **Refinar o Algoritmo de Diagnóstico:**
     *   Implementar um sistema de "pesos" para sintomas patognomônicos (altamente específicos).
     *   Considerar outros fatores como espécie, raça e idade do paciente no cálculo do score.
-*   **Melhorar o Front-end:**
-    *   Implementar um fluxo de login/autenticação completo.
-    *   Criar interfaces para gerenciar tutores, pacientes e outras entidades.
-    *   Melhorar a UX da seleção de sintomas (ex: busca com autocompletar).
-    *   Desenvolver a visualização do histórico completo do paciente.
 *   **Expandir Módulos:**
     *   Implementar o Módulo 4: Gerenciamento de Vacinação e Vermifugação com lembretes.
     *   Implementar a geração de documentos (receituários, atestados).
