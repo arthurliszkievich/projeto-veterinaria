@@ -4,12 +4,12 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Registro Funcionário - ZoeVet</title>
-        <link rel="stylesheet" href="style.css" />
+        <link rel="stylesheet" href="/style.css" />
     </head>
     <body>
         <header class="site-header">
             <div class="header-content">
-                <a href="index.html" class="logo-link">
+                <a href="/" class="logo-link">
                     <div class="logo">
                         <span class="logo-icon">🐾</span>
                         <h1>ZoeVet</h1>
@@ -77,8 +77,10 @@
                         id="password"
                         name="password"
                         required
+                        minlength="8"
                         placeholder="Mínimo 8 caracteres"
                     />
+                    <small class="form-help">Use letras, números e caracteres especiais</small>
                 </div>
 
                 <div class="form-group">
@@ -88,8 +90,18 @@
                         id="password2"
                         name="password2"
                         required
+                        minlength="8"
                         placeholder="Digite a senha novamente"
                     />
+                </div>
+
+                <div class="form-info">
+                    <p>📋 <strong>Informações importantes:</strong></p>
+                    <ul>
+                        <li>Você está criando uma conta de veterinário/funcionário</li>
+                        <li>Após o registro, aguarde aprovação do administrador</li>
+                        <li>Use e-mail profissional válido</li>
+                    </ul>
                 </div>
 
                 <button type="submit" id="registroButton" class="btn-primary">Criar Conta</button>
@@ -100,10 +112,10 @@
                 <div class="form-footer">
                     <p>
                         Já tem uma conta?
-                        <a href="login-funcionario.html">Fazer Login</a>
+                        <a href="/login-funcionario/" class="register-link">Fazer Login</a>
                     </p>
                     <p>
-                        <a href="index.html" class="back-link">← Voltar para seleção</a>
+                        <a href="/" class="back-link">← Voltar para seleção</a>
                     </p>
                 </div>
             </form>
@@ -115,6 +127,6 @@
             </div>
         </footer>
 
-        <script src="script.js"></script>
+        <script src="/script.js"></script>
     </body>
 </html>

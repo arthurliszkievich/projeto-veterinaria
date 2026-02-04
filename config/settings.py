@@ -75,7 +75,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
+        "DIRS": [BASE_DIR / "templates", BASE_DIR / "frontend"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -166,6 +166,7 @@ STORAGES = {
 # Diretórios adicionais onde o Django procurará por arquivos estáticos.
 STATICFILES_DIRS = [
     BASE_DIR / "static",
+    BASE_DIR / "frontend" / "assets",  # Adiciona pasta de assets do frontend
 ]
 
 # Media files (arquivos enviados por usuários)
