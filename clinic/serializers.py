@@ -1,12 +1,12 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from validate_docbr import CPF
 
 from .constants import (
     ERROR_TUTOR_CPF_INVALIDO,
     HELP_TEXT_DOENCA_SINTOMAS,
 )
 from .models import Consulta, Doenca, Paciente, Sintoma, Tutor, Veterinario
+from .services import TutorService
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -73,8 +73,9 @@ class TutorSerializer(serializers.ModelSerializer):
     """
     Serializer para o modelo Tutor.
 
-    Realiza validação de CPF usando a biblioteca validate_docbr
-    e formata automaticamente para o padrão XXX.XXX.XXX-XX.
+    Delega validação de CPF para TutorService, seguindo o princípio
+    de Single Responsibility (SRP). O Serializer apenas serializa/deserializa,
+    sem lógica de negócio.
     """
 
     pacientes = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
@@ -101,9 +102,21 @@ class TutorSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "data_cadastro"]
 
+    def __init__(self, *args, **kwargs):
+        """
+        Inicializa o serializer com injeção de dependência do serviço.
+
+        Seguindo o princípio de Dependency Inversion (SOLID).
+        """
+        super().__init__(*args, **kwargs)
+        self.tutor_service = TutorService()
+
     def validate_cpf(self, value):
         """
-        Valida se o CPF é válido usando a biblioteca validate_docbr.
+        Valida e formata o CPF delegando para o serviço de negócio.
+
+        O Serializer mantém apenas a interface de validação do DRF,
+        mas delega toda a lógica para TutorService.
 
         Args:
             value (str): CPF a ser validado
@@ -114,16 +127,14 @@ class TutorSerializer(serializers.ModelSerializer):
         Raises:
             ValidationError: Se o CPF for inválido
         """
-        cpf = CPF()
+        is_valid, cpf_formatado = self.tutor_service.validar_e_formatar_cpf(
+            value
+        )
 
-        # Remove formatação para validar apenas os números
-        cpf_value = value.replace(".", "").replace("-", "")
-
-        if not cpf.validate(cpf_value):
+        if not is_valid:
             raise serializers.ValidationError(ERROR_TUTOR_CPF_INVALIDO)
 
-        # Formata o CPF para o padrão XXX.XXX.XXX-XX antes de retornar
-        return cpf.mask(cpf_value)
+        return cpf_formatado
 
 
 class PacienteSerializer(serializers.ModelSerializer):
@@ -304,11 +315,16 @@ class ConsultaSerializer(serializers.ModelSerializer):
     def get_diagnosticos_suspeitos(self, instance):
         # Retorna os diagnósticos suspeitos ordenados por score (anexados pelo ViewSet)
         if hasattr(instance, "_diagnosticos_sugeridos_ordenados"):
-            return DoencaSerializer(
-                instance._diagnosticos_sugeridos_ordenados,
-                many=True,
-                context=self.context,
-            ).data
+            doencas = instance._diagnosticos_sugeridos_ordenados
+            resultado = []
+            for doenca in doencas:
+                doenca_data = DoencaSerializer(doenca, context=self.context).data
+                # Adiciona o score se estiver disponível
+                if hasattr(doenca, "_score"):
+                    doenca_data["score"] = round(doenca._score, 2)
+                    doenca_data["porcentagem"] = f"{round(doenca._score, 1)}%"
+                resultado.append(doenca_data)
+            return resultado
         # Fallback: se não foram calculados (ex: listagem geral), retorna do banco (ordem padrão)
         return DoencaSerializer(
             instance.diagnosticos_suspeitos.all(), many=True, context=self.context

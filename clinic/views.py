@@ -28,7 +28,7 @@ from .serializers import (
     UserSerializer,
     VeterinarioSerializer,
 )
-from .services import sugerir_diagnosticos
+from .services import ConsultaService
 
 # Configurar logger
 logger = logging.getLogger(__name__)
@@ -302,71 +302,46 @@ class ConsultaViewSet(viewsets.ModelViewSet):
     ordering_fields = ["data_hora_agendamento", "paciente__nome", "tipo_consulta"]
     ordering = ["-data_criacao_registro"]
 
-    def _processar_sugestoes_diagnostico(self, consulta_instance):
+    def __init__(self, *args, **kwargs):
         """
-        Método auxiliar para calcular e anexar sugestões de diagnóstico.
+        Inicializa o ViewSet com injeção de dependência do serviço.
 
-        Utiliza o serviço sugerir_diagnosticos para calcular as doenças mais prováveis
-        com base nos sintomas apresentados pelo paciente.
-
-        Args:
-            consulta_instance (Consulta): Instância da consulta a processar
-
-        Side Effects:
-            - Atualiza o campo diagnosticos_suspeitos da consulta
-            - Anexa atributo _diagnosticos_sugeridos_ordenados à instância
+        Seguindo o princípio de Dependency Inversion (SOLID),
+        a View depende de uma abstração (serviço) ao invés de
+        implementação concreta de lógica de negócio.
         """
-        sintomas_apresentados_objs = list(consulta_instance.sintomas_apresentados.all())
-
-        doencas_sugeridas_ordenadas = []
-        if sintomas_apresentados_objs:
-            logger.info(
-                f"Processando sugestões de diagnóstico para consulta {consulta_instance.id}"
-            )
-            doencas_sugeridas_ordenadas = sugerir_diagnosticos(
-                sintomas_apresentados_objs
-            )
-            if doencas_sugeridas_ordenadas:
-                consulta_instance.diagnosticos_suspeitos.set(
-                    doencas_sugeridas_ordenadas
-                )
-                logger.debug(
-                    f"Salvos {len(doencas_sugeridas_ordenadas)} diagnósticos suspeitos"
-                )
-            else:
-                consulta_instance.diagnosticos_suspeitos.clear()
-                logger.debug("Nenhum diagnóstico suspeito encontrado")
-        else:
-            consulta_instance.diagnosticos_suspeitos.clear()
-            logger.debug("Nenhum sintoma apresentado")
-
-        # Anexa a lista ORDENADA à instância para o SerializerMethodField usar na RESPOSTA
-        setattr(
-            consulta_instance,
-            "_diagnosticos_sugeridos_ordenados",
-            doencas_sugeridas_ordenadas,
-        )
+        super().__init__(*args, **kwargs)
+        self.consulta_service = ConsultaService()
 
     def perform_create(self, serializer):
         """
-        Cria uma nova consulta e processa sugestões de diagnóstico.
+        Cria uma nova consulta e delega o processamento para o serviço.
+
+        A View agora é "fina" e apenas orquestra a chamada ao serviço,
+        seguindo o princípio de Single Responsibility.
 
         Args:
             serializer: Serializer validado com os dados da consulta
         """
+        logger.info(f"Dados recebidos: {serializer.validated_data.keys()}")
+        if 'sintomas_apresentados' in serializer.validated_data:
+            logger.info(f"Sintomas no payload: {len(serializer.validated_data['sintomas_apresentados'])}")
+        
         consulta = serializer.save()
-        self._processar_sugestoes_diagnostico(consulta)
         logger.info(f"Nova consulta criada: ID {consulta.id}")
+        logger.info(f"Sintomas após save: {consulta.sintomas_apresentados.count()}")
+        self.consulta_service.processar_diagnosticos(consulta)
+        logger.info(f"Processamento de diagnósticos concluído")
 
     def perform_update(self, serializer):
         """
-        Atualiza uma consulta existente e recalcula sugestões de diagnóstico.
+        Atualiza uma consulta existente e delega o reprocessamento para o serviço.
 
         Args:
             serializer: Serializer validado com os dados atualizados
         """
         consulta = serializer.save()
-        self._processar_sugestoes_diagnostico(consulta)
+        self.consulta_service.processar_diagnosticos(consulta)
         logger.info(f"Consulta atualizada: ID {consulta.id}")
 
     def retrieve(self, request, *args, **kwargs):
@@ -380,7 +355,7 @@ class ConsultaViewSet(viewsets.ModelViewSet):
             Response: Dados completos da consulta com diagnósticos sugeridos
         """
         instance = self.get_object()
-        self._processar_sugestoes_diagnostico(instance)
+        self.consulta_service.processar_diagnosticos(instance)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
