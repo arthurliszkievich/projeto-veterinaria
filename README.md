@@ -7,6 +7,7 @@
 [![DRF](https://img.shields.io/badge/DRF-3.16.0-red.svg)](https://www.django-rest-framework.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF.svg)](.github/workflows/ci-cd.yml)
 [![Tests](https://img.shields.io/badge/Tests-13%20Passed%20%7C%20100%25%20Coverage-brightgreen.svg)](clinic/tests/)
 [![Code Style](https://img.shields.io/badge/Code%20Style-SOLID%20%7C%20Clean%20Architecture-purple.svg)]()
 
@@ -322,7 +323,68 @@ Este projeto demonstra conhecimento prático de:
 
 ---
 
-## 🔮 Roadmap e Melhorias Futuras
+## � CI/CD - Integração e Entrega Contínua
+
+Implementei um pipeline completo de **CI/CD** usando **GitHub Actions** para garantir qualidade e confiabilidade do código a cada commit:
+
+### 🎯 Pipeline de CI/CD
+
+O workflow automatizado é acionado em **push** e **pull requests** nas branches `main` e `develop`, executando:
+
+#### ✅ **Job: Test** - Testes e Qualidade de Código
+- **Setup do PostgreSQL 16** como serviço Docker
+- **Instalação de dependências** com cache de pip
+- **Execução de migrações** Django
+- **Testes com pytest** + relatório de cobertura
+- **Upload de coverage** para Codecov (opcional)
+- **Análise de código** com flake8 (erros críticos e complexidade)
+
+#### 🐳 **Job: Build** - Build Docker (apenas em push para main)
+- **Build da imagem Docker** com cache otimizado
+- **Validação do docker-compose.yml**
+- **Login no Docker Hub** (opcional, para publicação)
+- Usa **Docker Buildx** com cache em GitHub Actions
+
+#### 🧹 **Job: Lint** - Linting e Formatação
+- **Verificação de formatação** com Black
+- **Análise de imports** com isort
+- **Linting completo** com flake8
+
+### 📊 Benefícios do CI/CD
+
+✅ **Detecção precoce de bugs**: Testes executam automaticamente a cada push  
+✅ **Qualidade de código garantida**: Lint e formatação verificados antes do merge  
+✅ **Build validado**: Garante que a imagem Docker sempre pode ser construída  
+✅ **Cobertura de testes rastreada**: Relatórios de coverage a cada execução  
+✅ **Feedback rápido**: Desenvolvedores sabem em minutos se o código está OK  
+
+### 🚀 Como Funciona na Prática
+
+```bash
+# 1. Developer faz push para uma branch
+git push origin feature/nova-funcionalidade
+
+# 2. GitHub Actions automaticamente:
+#    ✓ Instala dependências
+#    ✓ Executa todos os testes
+#    ✓ Verifica formatação
+#    ✓ Valida build Docker
+
+# 3. Se tudo passar: ✅ Pull Request pode ser mergeado
+# 4. Se falhar: ❌ Desenvolvedor corrige antes do merge
+```
+
+### 📁 Arquivo de Configuração
+
+O workflow está em [.github/workflows/ci-cd.yml](.github/workflows/ci-cd.yml) e pode ser facilmente customizado para adicionar:
+- Deploy automático para staging/produção
+- Notificações no Slack/Discord
+- Análise de segurança com Snyk
+- Publicação automática no Docker Hub
+
+---
+
+## �🔮 Roadmap e Melhorias Futuras
 
 ### Curto Prazo
 - [ ] Adicionar pesos adaptativos aos sintomas (ex: febre tem peso maior)
@@ -333,11 +395,13 @@ Este projeto demonstra conhecimento prático de:
 - [ ] Integrar modelo de Machine Learning (Random Forest ou XGBoost)
 - [ ] Implementar sistema de feedback veterinário para melhorar algoritmo
 - [ ] Adicionar gráficos interativos com Chart.js no frontend
+- [ ] Adicionar deploy automático via CI/CD para staging
 
 ### Longo Prazo
 - [ ] Deploy em produção (AWS ECS ou Railway)
-- [ ] Implementar CI/CD com GitHub Actions
+- [x] **Implementar CI/CD com GitHub Actions** ✅
 - [ ] Adicionar monitoramento com Prometheus + Grafana
+- [ ] Implementar deploy contínuo para produção
 
 ---
 

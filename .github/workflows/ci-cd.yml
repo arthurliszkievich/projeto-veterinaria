@@ -1,0 +1,135 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Testes e Qualidade de Código
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: veterinaria_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout do código
+      uses: actions/checkout@v4
+
+    - name: Configurar Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+
+    - name: Instalar dependências
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Executar migrações
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/veterinaria_test
+      run: |
+        python manage.py migrate --noinput
+
+    - name: Executar testes com pytest
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/veterinaria_test
+      run: |
+        pytest --cov=clinic --cov-report=xml --cov-report=term-missing
+
+    - name: Upload coverage para Codecov (opcional)
+      uses: codecov/codecov-action@v4
+      if: always()
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: false
+
+    - name: Verificar qualidade do código com flake8
+      run: |
+        pip install flake8
+        flake8 clinic/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 clinic/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout do código
+      uses: actions/checkout@v4
+
+    - name: Configurar Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login no Docker Hub (opcional)
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      continue-on-error: true
+
+    - name: Build da imagem Docker
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: false
+        tags: zoevet:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Testar container Docker
+      run: |
+        docker-compose -f docker-compose.yml config
+
+  lint:
+    name: Linting e Formatação
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout do código
+      uses: actions/checkout@v4
+
+    - name: Configurar Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Instalar ferramentas de lint
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 black isort
+
+    - name: Verificar formatação com Black
+      run: |
+        black --check --diff clinic/
+      continue-on-error: true
+
+    - name: Verificar imports com isort
+      run: |
+        isort --check-only --diff clinic/
+      continue-on-error: true
+
+    - name: Análise com flake8
+      run: |
+        flake8 clinic/ --count --statistics
+      continue-on-error: true
