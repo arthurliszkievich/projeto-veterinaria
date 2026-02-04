@@ -25,34 +25,39 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('userType');
         localStorage.removeItem('userName');
-        window.location.href = 'index.html';
+        window.location.href = '/';
     }
 
-    // Roteamento simples baseado no nome do arquivo na URL
-    const currentPage = window.location.pathname.split('/').pop();
+    // Roteamento baseado no caminho da URL (funciona com Django)
+    const currentPath = window.location.pathname;
+    const currentPage = currentPath.split('/').filter(Boolean).pop() || 'home';
 
     // Páginas públicas que não precisam de autenticação
     const publicPages = [
-        'index.html',
-        'login.html',
-        'registro.html',
-        'login-cliente.html',
-        'login-funcionario.html',
-        'login-gerente.html',
-        'registro-cliente.html',
-        'registro-funcionario.html',
-        'registro-gerente.html'
+        '', 'home',
+        'login', 'registro',
+        'login-cliente', 'login-funcionario', 'login-gerente',
+        'registro-cliente', 'registro-funcionario', 'registro-gerente',
+        // Mantém compatibilidade com .html (caso necessário)
+        'index.html', 'login.html', 'registro.html',
+        'login-cliente.html', 'login-funcionario.html', 'login-gerente.html',
+        'registro-cliente.html', 'registro-funcionario.html', 'registro-gerente.html'
     ];
 
     // Guarda de autenticação: se não estiver em página pública e não tiver token, redireciona para o login
-    if (!publicPages.includes(currentPage) && currentPage !== '' && !getAuthToken()) {
-        window.location.href = 'index.html';
+    if (!publicPages.includes(currentPage) && !getAuthToken()) {
+        window.location.href = '/';
     }
 
     // ===============================================
     //  SEÇÃO 2: LÓGICA ESPECÍFICA DAS PÁGINAS DE LOGIN
     // ===============================================
     if (
+        currentPage === 'login' ||
+        currentPage === 'login-cliente' ||
+        currentPage === 'login-funcionario' ||
+        currentPage === 'login-gerente' ||
+        // Compatibilidade com .html
         currentPage === 'login.html' ||
         currentPage === 'login-cliente.html' ||
         currentPage === 'login-funcionario.html' ||
@@ -64,9 +69,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Redireciona baseado no tipo de usuário salvo
             const userType = getUserType();
             if (userType === 'gerente') {
-                window.location.href = 'dashboard-admin.html';
+                window.location.href = '/dashboard/';
             } else {
-                window.location.href = 'dashboard.html';
+                window.location.href = '/dashboard/';
             }
             return;
         }
@@ -119,9 +124,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Redireciona baseado no tipo de usuário
                     if (userType === 'gerente') {
-                        window.location.href = 'dashboard-admin.html';
+                        window.location.href = '/dashboard/';
                     } else {
-                        window.location.href = 'dashboard.html';
+                        window.location.href = '/dashboard/';
                     }
                 } catch (error) {
                     errorMessageP.textContent = error.message;
@@ -138,6 +143,11 @@ document.addEventListener('DOMContentLoaded', () => {
     //  SEÇÃO 2.5: LÓGICA DAS PÁGINAS DE REGISTRO
     // ===============================================
     if (
+        currentPage === 'registro' ||
+        currentPage === 'registro-cliente' ||
+        currentPage === 'registro-funcionario' ||
+        currentPage === 'registro-gerente' ||
+        // Compatibilidade com .html
         currentPage === 'registro.html' ||
         currentPage === 'registro-cliente.html' ||
         currentPage === 'registro-funcionario.html' ||
@@ -225,18 +235,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Sucesso!
                     if (successMessageP) {
                         successMessageP.textContent =
-                            'Conta criada com sucesso! Redirecionando para login...';
+                            '✅ Conta criada com sucesso! Redirecionando para login...';
                         successMessageP.classList.remove('hidden');
                     }
 
                     // Redireciona para a página de login correspondente após 2 segundos
                     setTimeout(() => {
                         const loginPages = {
-                            cliente: 'login-cliente.html',
-                            funcionario: 'login-funcionario.html',
-                            gerente: 'login-gerente.html'
+                            cliente: '/login-cliente/',
+                            funcionario: '/login-funcionario/',
+                            gerente: '/login-gerente/'
                         };
-                        window.location.href = loginPages[userType] || 'login-funcionario.html';
+                        window.location.href = loginPages[userType] || '/login-funcionario/';
                     }, 2000);
                 } catch (error) {
                     errorMessageP.textContent = error.message;
@@ -251,7 +261,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==================================================
     //  SEÇÃO 3: LÓGICA ESPECÍFICA DA PÁGINA DE DASHBOARD
     // ==================================================
-    if (currentPage === 'dashboard.html' || currentPage === 'dashboard-admin.html') {
+    if (
+        currentPage === 'dashboard' ||
+        currentPage === 'dashboard-admin' ||
+        // Compatibilidade com .html
+        currentPage === 'dashboard.html' ||
+        currentPage === 'dashboard-admin.html'
+    ) {
         const logoutButton = document.getElementById('logoutButton');
         if (logoutButton) {
             logoutButton.addEventListener('click', logout);
@@ -261,29 +277,34 @@ document.addEventListener('DOMContentLoaded', () => {
         const userNameElement = document.getElementById('userName');
         if (userNameElement) {
             const savedName = localStorage.getItem('userName');
+            const token = getAuthToken();
+            
             if (savedName) {
                 userNameElement.textContent = savedName;
-            } else {
+            } else if (token) {
                 // Tenta buscar do servidor
                 const fetchUserName = async () => {
                     try {
                         const response = await fetch(apiUserUrl, {
-                            headers: { Authorization: `Bearer ${getAuthToken()}` }
+                            headers: { Authorization: `Bearer ${token}` }
                         });
                         if (response.ok) {
                             const userData = await response.json();
                             const displayName =
-                                userData.first_name || userData.username || 'Usuário';
+                                userData.first_name || userData.username || 'Veterinário';
                             localStorage.setItem('userName', displayName);
                             userNameElement.textContent = displayName;
                         } else {
-                            userNameElement.textContent = 'Usuário';
+                            userNameElement.textContent = 'Veterinário';
                         }
                     } catch (error) {
-                        userNameElement.textContent = 'Usuário';
+                        console.error('Erro ao buscar nome do usuário:', error);
+                        userNameElement.textContent = 'Veterinário';
                     }
                 };
                 fetchUserName();
+            } else {
+                userNameElement.textContent = 'Veterinário';
             }
         }
     }
@@ -291,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================================
     //  SEÇÃO 3.5: LÓGICA DA PÁGINA DE PACIENTES
     // ===============================================
-    if (currentPage === 'pacientes.html') {
+    if (currentPage === 'pacientes' || currentPage === 'pacientes.html') {
         const searchInput = document.getElementById('searchInput');
         const searchButton = document.getElementById('searchButton');
         const patientTableBody = document.getElementById('patientTableBody');
@@ -370,12 +391,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Carregar a lista inicial de pacientes ao carregar a página
         fetchAndDisplayPatients();
+        
+        // Event listener para botões de detalhes
+        patientTableBody.addEventListener('click', (e) => {
+            if (e.target.classList.contains('action-button')) {
+                e.preventDefault();
+                const patientId = e.target.dataset.patientId;
+                if (patientId) {
+                    alert(`Funcionalidade de detalhes do paciente ${patientId} será implementada em breve!`);
+                    // Futuramente: window.location.href = `/pacientes/${patientId}/`;
+                }
+            }
+        });
     }
 
     // ==================================================
     //  SEÇÃO 4: LÓGICA ESPECÍFICA DA PÁGINA DE CONSULTA
     // ==================================================
-    if (currentPage === 'consulta.html') {
+    if (currentPage === 'consulta' || currentPage === 'consulta.html') {
         // --- Referências aos elementos do DOM da consulta ---
         const pacienteSelect = document.getElementById('pacienteSelect');
         const veterinarioSelect = document.getElementById('veterinarioSelect');
@@ -468,7 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 veterinario_responsavel: parseInt(formData.get('veterinario_responsavel')),
                 queixa_principal_tutor: formData.get('queixa_principal_tutor'),
                 historico_doenca_atual: formData.get('historico_doenca_atual'),
-                sintomas_apresentados: sintomasSelecionadosIds,
+                sintomas_apresentados_ids: sintomasSelecionadosIds,
                 tipo_consulta: 'ROTINA' // Adicione um valor padrão ou um select no HTML para isso
             };
             if (formData.get('temperatura_celsius')) {
@@ -498,7 +531,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (diagnosticos.length > 0) {
                     diagnosticos.forEach(diag => {
                         const li = document.createElement('li');
-                        li.textContent = diag.nome;
+                        if (diag.porcentagem) {
+                            li.textContent = `${diag.nome} (${diag.porcentagem})`;
+                        } else {
+                            li.textContent = diag.nome;
+                        }
                         diagnosticosUl.appendChild(li);
                     });
                 } else {
@@ -575,7 +612,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     alert('Conta criada com sucesso! Faça login para continuar.');
-                    window.location.href = 'login.html';
+                    window.location.href = '/login/';
                 } catch (error) {
                     errorMessageP.textContent = error.message;
                     errorMessageP.classList.remove('hidden');
@@ -590,7 +627,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==================================================
     //  SEÇÃO 6: LÓGICA DA PÁGINA NOVO TUTOR
     // ==================================================
-    if (currentPage === 'novo-tutor.html') {
+    if (currentPage === 'novo-tutor' || currentPage === 'novo-tutor.html') {
         const tutorForm = document.getElementById('novoTutorForm');
 
         // Máscara para CPF
@@ -665,7 +702,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     tutorForm.reset();
 
                     setTimeout(() => {
-                        window.location.href = 'novo-paciente.html';
+                        window.location.href = '/novo-paciente/';
                     }, 1500);
                 } catch (error) {
                     errorMsg.textContent = error.message;
@@ -681,7 +718,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==================================================
     //  SEÇÃO 7: LÓGICA DA PÁGINA NOVO PACIENTE
     // ==================================================
-    if (currentPage === 'novo-paciente.html') {
+    if (
+        currentPage === 'novo-paciente' ||
+        // Compatibilidade com .html
+        currentPage === 'novo-paciente.html'
+    ) {
         const pacienteForm = document.getElementById('novoPacienteForm');
         const tutorSelect = document.getElementById('tutorSelect');
 
@@ -757,7 +798,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     pacienteForm.reset();
 
                     setTimeout(() => {
-                        window.location.href = 'pacientes.html';
+                        window.location.href = '/pacientes/';
                     }, 1500);
                 } catch (error) {
                     errorMsg.textContent = error.message;
