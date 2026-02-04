@@ -1,0 +1,18 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/home/django/web
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY=django-insecure-dev-key-para-testes-123456789
+      - DEBUG=True
+      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+      - SQL_ENGINE=django.db.backends.sqlite3
+      - SQL_DATABASE=db.sqlite3
+    stdin_open: true
+    tty: true
